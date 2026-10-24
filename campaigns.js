@@ -2,7 +2,7 @@
 // Use fixed dates: a returning visitor must never see an artificially reset timer.
 export const campaign = {
   id: 'little-treat-edit',
-  name: 'The Little Treat Edit',
+  name: 'Selected Styles Sale',
   startsAt: '2026-10-24T00:00:00Z',
   endsAt: '2026-11-15T23:59:59Z',
   percentOff: 20,
@@ -11,9 +11,9 @@ export const campaign = {
 };
 
 export const drops = [
-  { id: 'after-hours', number: '01', name: 'After Hours', tagline: 'For plans that deserve an outfit.', description: 'Leopard, a little attitude, and pieces that make an entrance. Your next going-out look starts here.', releasesAt: '2026-11-06T18:00:00Z', productIds: ['leopard-mini', 'leopard-trouser-set'], preview: true },
-  { id: 'cherry-picked', number: '02', name: 'Cherry Picked', tagline: 'Sweet details. Main-character energy.', description: 'Playful prints and matching moments for the days you want to feel a little extra.', releasesAt: '2026-11-13T18:00:00Z', productIds: ['cherry-knit-set', 'cherry-lounge-set'], preview: true },
-  { id: 'off-the-clock', number: '03', name: 'Off the Clock', tagline: 'Your weekend uniform, upgraded.', description: 'Easy silhouettes with a point of view. For slow starts, spontaneous plans, and everything in between.', releasesAt: '2026-11-20T18:00:00Z', productIds: ['off-duty-set', 'leopard-skirt-set'], preview: true },
+  { id: 'after-hours', number: '01', name: 'After Hours', tagline: 'Leopard prints for your next night out.', description: 'A leopard-print mini dress and a matching cami and trouser set. Choose your style before the release.', releasesAt: '2026-11-06T18:00:00Z', productIds: ['leopard-mini', 'leopard-trouser-set'], preview: true },
+  { id: 'cherry-picked', number: '02', name: 'Cherry Picked', tagline: 'Cherry prints and matching sets.', description: 'Two cherry-print sets with camisoles and matching shorts. Browse the collection before it arrives.', releasesAt: '2026-11-13T18:00:00Z', productIds: ['cherry-knit-set', 'cherry-lounge-set'], preview: true },
+  { id: 'off-the-clock', number: '03', name: 'Off the Clock', tagline: 'Graphic tees, denim and printed skirts.', description: 'Casual tee and skirt sets for everyday wear. Choose your size and preview a reservation.', releasesAt: '2026-11-20T18:00:00Z', productIds: ['off-duty-set', 'leopard-skirt-set'], preview: true },
 ];
 
 export function campaignStatus(now = Date.now()) {

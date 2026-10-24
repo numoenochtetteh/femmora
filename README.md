@@ -108,12 +108,12 @@ The public production site and logo image need to be accessible to messaging-app
 
 ## Version 6: offers, upcoming drops and first picks
 
-The original video entrance remains the first screen. Scroll below it to see the new offer feature, upcoming-release cards, First Picks introduction and email-signup preview.
+The original video entrance remains the first screen. Scroll below it to see the new offer feature, upcoming-release cards, Reservations introduction and email-signup preview.
 
 New routes:
 
-- #/promotions — The Little Treat Edit, a fixed countdown and a four-piece offer edit.
-- #/drops — upcoming sample collections, release times, notification buttons and a link to First Picks.
+- #/promotions — Selected Styles Sale, a fixed countdown and a four-piece offer edit.
+- #/drops — upcoming sample collections, release times, notification buttons and a link to Reservations.
 - #/reserve — browse all upcoming pieces, filter by collection, choose size and quantity, save and remove reservation previews.
 - #/faq?section=releases and #/faq?section=reservations — explanations of the preview flows.
 
@@ -133,7 +133,7 @@ Run npm test after changing campaign details, and npm run build before deploymen
 
 The new features are frontend previews. Email forms validate the address and consent checkbox, then show an explicit preview confirmation. They do **not** subscribe anyone, store email addresses or send messages.
 
-Reservation previews validate the product, release, size, quantity and acknowledgement. They save only the selected product, collection, size and quantity in browser storage. Names and email addresses are not stored or transmitted. Repeating the same piece and size updates that preview rather than creating a duplicate. Customers can remove previews from the First Picks page. The form closes to new previews once its example release time is reached.
+Reservation previews validate the product, release, size, quantity and acknowledgement. They save only the selected product, collection, size and quantity in browser storage. Names and email addresses are not stored or transmitted. Repeating the same piece and size updates that preview rather than creating a duplicate. Customers can remove previews from the Reservations page. The form closes to new previews once its example release time is reached.
 
 A saved preview does **not** hold stock, submit a request, guarantee a piece, take a deposit or create an order. To accept real customers later, connect durable reservation storage and an email provider, then replace the preview confirmations with the real service response and the brand's confirmed reservation terms.
 
@@ -142,3 +142,11 @@ No new dependencies, environment variables or service credentials are required f
 ### Updating your existing project
 
 Copy the files from this folder into your existing FEMMORA project. Preserve your existing Git history, Vercel project link and local environment files. The new campaigns.js, discovery.js and discovery.css files must be included when you push. Vercel still uses the Other preset, npm run build, and the dist output directory.
+
+## Version 7: clearer storefront copy
+
+The sale now states the discount and eligible styles directly. Upcoming collections, release alerts and reservations use short headings and clear action labels. Product descriptions list garment features and simple styling suggestions.
+
+Reference storefronts reviewed: Zara, Mango, H&M, Oh Polly, MESHKI and Christie Brown. The FEMMORA wording is original; no brand claims or policies were copied.
+
+The examples still use the same editable promotion dates and product selections. Signup and reservation forms remain clearly labelled previews. No price, stock, payment, email or reservation service configuration changed in this copy update.
