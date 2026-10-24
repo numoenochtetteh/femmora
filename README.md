@@ -105,3 +105,40 @@ Vercel runs `npm run build`, which fills the initial HTML metadata with your pro
 For a preferred custom domain, you can optionally set `SITE_URL` to the complete public HTTPS origin and redeploy. This overrides automatic domain selection. For a local build with no deployment variables, metadata uses `http://localhost:5173`.
 
 The public production site and logo image need to be accessible to messaging-app crawlers. Some apps cache older link previews; after a change, their preview may need to refresh.
+
+## Version 6: offers, upcoming drops and first picks
+
+The original video entrance remains the first screen. Scroll below it to see the new offer feature, upcoming-release cards, First Picks introduction and email-signup preview.
+
+New routes:
+
+- #/promotions — The Little Treat Edit, a fixed countdown and a four-piece offer edit.
+- #/drops — upcoming sample collections, release times, notification buttons and a link to First Picks.
+- #/reserve — browse all upcoming pieces, filter by collection, choose size and quantity, save and remove reservation previews.
+- #/faq?section=releases and #/faq?section=reservations — explanations of the preview flows.
+
+### Edit the example campaign and releases
+
+Open campaigns.js. This is the single source for the example discount, selected product IDs, campaign dates and upcoming collections.
+
+The included offer is **20% off four preview products**, with a fixed example end time of **15 November 2026 at 23:59:59 GMT**. The three example releases are **6, 13 and 20 November 2026 at 18:00 GMT**. These dates, product choices and offers are examples, not confirmed FEMMORA promotions. Replace them with approved details before real offers open.
+
+Use full ISO timestamps such as 2026-11-15T23:59:59Z; Z is UTC/GMT, matching Ghana time. The countdown uses one fixed deadline and does not restart for returning visitors. Preview discounts begin at the configured start and stop at the configured end. Product cards, sorting, product pages, bag confirmations, totals and checkout previews all use the same price calculation.
+
+Use product IDs from catalog.js in campaign.productIds and each release's productIds. The page headings and sales copy are in discovery.js. Layouts are in discovery.css; the existing store styling remains in styles.css.
+
+Run npm test after changing campaign details, and npm run build before deployment.
+
+### What the forms do
+
+The new features are frontend previews. Email forms validate the address and consent checkbox, then show an explicit preview confirmation. They do **not** subscribe anyone, store email addresses or send messages.
+
+Reservation previews validate the product, release, size, quantity and acknowledgement. They save only the selected product, collection, size and quantity in browser storage. Names and email addresses are not stored or transmitted. Repeating the same piece and size updates that preview rather than creating a duplicate. Customers can remove previews from the First Picks page. The form closes to new previews once its example release time is reached.
+
+A saved preview does **not** hold stock, submit a request, guarantee a piece, take a deposit or create an order. To accept real customers later, connect durable reservation storage and an email provider, then replace the preview confirmations with the real service response and the brand's confirmed reservation terms.
+
+No new dependencies, environment variables or service credentials are required for this version. Existing Vercel automatic social-image URL handling is retained.
+
+### Updating your existing project
+
+Copy the files from this folder into your existing FEMMORA project. Preserve your existing Git history, Vercel project link and local environment files. The new campaigns.js, discovery.js and discovery.css files must be included when you push. Vercel still uses the Other preset, npm run build, and the dist output directory.

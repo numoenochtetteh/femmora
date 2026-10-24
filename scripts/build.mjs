@@ -5,7 +5,7 @@ import { applySocialMetadata, resolveSiteOrigin } from './metadata.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const output = join(root, 'dist');
-const sourceFiles = ['index.html', 'app.js', 'catalog.js', 'styles.css', 'favicon.ico'];
+const sourceFiles = ['index.html', 'app.js', 'catalog.js', 'campaigns.js', 'discovery.js', 'styles.css', 'discovery.css', 'favicon.ico'];
 const { products } = await import(new URL('../catalog.js', import.meta.url));
 const requiredAssets = ['femmora-film.mp4', 'film-poster.jpg', 'femmora-wide-film.mp4', 'wide-film-poster.jpg', 'femmora-logo.png', 'femmora-share-logo.jpg', 'favicon-16x16.png', 'favicon-32x32.png', 'apple-touch-icon.png', 'fonts/dm-sans-400.woff', 'fonts/DM-Sans-OFL.txt', ...products.map((product) => product.image)];
 

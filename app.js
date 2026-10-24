@@ -1,4 +1,6 @@
 import { products, sizes, categories } from './catalog.js';
+import { offerFor, priceFor } from './campaigns.js';
+import { createDiscovery } from './discovery.js';
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const main = $('#main');
@@ -30,6 +32,7 @@ let dialogTrigger = null;
 const paths = {
   search: '<circle cx="10.8" cy="10.8" r="7.5"/><path d="m16.3 16.3 5 5"/>',
   bag: '<path d="M5 7h14l1 14H4L5 7Z"/><path d="M8 7V5a4 4 0 0 1 8 0v2"/>',
+  bell: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/>',
   close: '<path d="m5 5 14 14M19 5 5 19"/>',
   arrow: '<path d="M4 12h15m-5-5 5 5-5 5"/>',
   arrowup: '<path d="M6 18 18 6M6 6h12v12"/>',
@@ -42,6 +45,7 @@ const paths = {
 };
 const icon = (name) => `<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">${paths[name] || ''}</svg>`;
 const announce = (message) => { $('#announcer').textContent = message; };
+const discovery = createDiscovery({ $, main, icon, money, escape, asset, getProduct, sizes, productCard, openDialog, announce, onPricingChange: () => { if (!document.hidden) render(); } });
 
 function readCart() {
   try {
@@ -65,7 +69,7 @@ function persistCart() {
   renderHeader();
 }
 const cartCount = () => cart.reduce((total, item) => total + item.quantity, 0);
-const cartTotal = () => cart.reduce((total, item) => total + getProduct(item.id).price * item.quantity, 0);
+const cartTotal = () => cart.reduce((total, item) => total + priceFor(getProduct(item.id)) * item.quantity, 0);
 
 function route() {
   const hash = window.location.hash.slice(1) || '/';
@@ -77,7 +81,7 @@ function route() {
 function renderHeader() {
   const current = route().name;
   const count = cartCount();
-  const nav = [['Home', '#/', 'home'], ['Shop', '#/shop', 'shop'], ['FAQ', '#/faq', 'faq']];
+  const nav = [['Home', '#/', 'home'], ['Shop', '#/shop', 'shop'], ['Offers', '#/promotions', 'promotions'], ['Next drops', '#/drops', 'drops'], ['FAQ', '#/faq', 'faq']];
   const links = nav.map(([label, url, name]) => `<a href="${url}" ${current === name ? 'class="active" aria-current="page"' : ''}>${label}</a>`).join('');
   $('#header').innerHTML = `
     <button class="icon-button mobile-menu-toggle" data-action="menu" aria-label="${menuOpen ? 'Close' : 'Open'} navigation" aria-expanded="${menuOpen}" aria-controls="mobile-nav">${icon(menuOpen ? 'close' : 'menu')}</button>
@@ -94,8 +98,8 @@ function renderHeader() {
 function renderFooter() {
   $('#footer').innerHTML = `
     <div class="footer-content">
-      <div class="footer-note"><span class="overline muted">Stay close</span><h2>Your next favourite is here.</h2><p>New pieces. First looks. A little FEMMORA in your feed.</p><a class="text-link" href="${instagram}" target="_blank" rel="noopener noreferrer">Follow @femmora_gh ↗</a></div>
-      <nav class="footer-links" aria-label="Explore"><span class="overline">Explore</span><a href="#/shop">Shop the collection</a><a href="#/faq">FAQ & customer care</a><a href="#/cart">Your bag</a></nav>
+      <div class="footer-note"><span class="overline muted">Stay close</span><h2>Be first to the good stuff.</h2><p>Fresh drops. Little treats. Pieces worth making room for.</p><button class="text-link footer-signup-button" data-action="notify">Preview the drop list ↗</button><a class="text-link" href="${instagram}" target="_blank" rel="noopener noreferrer">Follow @femmora_gh ↗</a></div>
+      <nav class="footer-links" aria-label="Explore"><span class="overline">Explore</span><a href="#/shop">Shop the collection</a><a href="#/promotions">The offer edit</a><a href="#/drops">Upcoming drops</a><a href="#/reserve">Reserve a first pick</a><a href="#/faq">FAQ & customer care</a><a href="#/cart">Your bag</a></nav>
       <nav class="footer-links" aria-label="Find us"><span class="overline">Find us</span><a href="${instagram}" target="_blank" rel="noopener noreferrer">Instagram ↗</a><span>Accra, Ghana · GHS ₵</span></nav>
     </div>
     <div class="footer-brand" aria-hidden="true">${brandMark()}</div>
@@ -109,11 +113,11 @@ function renderHome() {
       <video id="entrance-film" src="${media.src}" data-variant="${media.variant}" autoplay muted loop playsinline preload="metadata" poster="${media.poster}" aria-hidden="true"></video>
       <div class="entrance-center">
         <h1 class="sr-only">FEMMORA</h1>${brandMark('entrance-brand')}
-        <nav class="entrance-nav" aria-label="Enter FEMMORA"><a href="#/" aria-current="page">HOME</a><a href="#/shop">SHOP</a><a href="#/faq">FAQ</a></nav>
+        <nav class="entrance-nav" aria-label="Enter FEMMORA"><a href="#/" aria-current="page">HOME</a><a href="#/shop">SHOP</a><a href="#/promotions">OFFERS</a><a href="#/drops">NEXT DROPS</a><a href="#/faq">FAQ</a></nav>
       </div>
-      <p class="entrance-caption">The everyday, reimagined.</p>
+      <button class="entrance-caption home-scroll" data-action="home-discover">A little more FEMMORA ↓</button>
       <div class="entrance-bottom"><button id="film-toggle" class="film-toggle" data-action="film" aria-label="Pause background video">${icon('pause')}<span>Pause film</span></button><a href="${instagram}" target="_blank" rel="noopener noreferrer">@FEMMORA_GH ↗</a></div>
-    </section>`;
+    </section>${discovery.homeSections()}`;
   const video = $('#entrance-film');
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   video.muted = true;
@@ -147,16 +151,16 @@ function updateFilmButton() {
 }
 
 function productCard(product, index = 9) {
-  return `<article class="product-card">
+  return `<article class="product-card">${offerFor(product.id) ? '<span class="offer-badge">' + offerFor(product.id).percentOff + '% off / preview</span>' : ''}
     <a href="#/product/${product.id}" class="product-photo" aria-label="View ${escape(product.name)}"><img src="${asset(product)}" alt="${escape(product.color + ' ' + product.name)}" width="800" height="1000" loading="${index < 5 ? 'eager' : 'lazy'}" decoding="async" /><span class="product-view" aria-hidden="true">Discover piece ${icon('arrow')}</span></a>
-    <div class="product-card-info"><h2><a href="#/product/${product.id}">${escape(product.name)}</a></h2><p>${money(product.price)}</p></div>
+    <div class="product-card-info"><h2><a href="#/product/${product.id}">${escape(product.name)}</a></h2><p>${discovery.priceMarkup(product)}</p></div>
   </article>`;
 }
 
 function sortedProducts(list) {
   const copy = [...list];
-  if (collectionSort === 'price-low') copy.sort((a, b) => a.price - b.price);
-  if (collectionSort === 'price-high') copy.sort((a, b) => b.price - a.price);
+  if (collectionSort === 'price-low') copy.sort((a, b) => priceFor(a) - priceFor(b));
+  if (collectionSort === 'price-high') copy.sort((a, b) => priceFor(b) - priceFor(a));
   if (collectionSort === 'name') copy.sort((a, b) => a.name.localeCompare(b.name));
   return copy;
 }
@@ -188,7 +192,7 @@ function renderProduct(id) {
     <div class="breadcrumbs"><a href="#/shop">Collection</a><span>/</span><span>${escape(product.name)}</span></div>
     <div class="product-layout">
       <div class="product-gallery"><button class="product-main-image" data-action="zoom" data-id="${id}" aria-label="Enlarge ${escape(product.name)} image"><img src="${asset(product)}" alt="${escape(product.color + ' ' + product.name)}" width="800" height="1000" fetchpriority="high" /><span class="zoom-hint">${icon('zoom')}</span></button><p class="gallery-caption">${escape(product.name)} · ${escape(product.color)}</p></div>
-      <div class="product-info"><p class="overline">FEMMORA / ${escape(product.category)}</p><h1 class="product-title">${escape(product.name)}</h1><p class="product-price">${money(product.price)}</p><p class="product-description">${escape(product.description)}</p><p class="color-line">Colour <span>${escape(product.color)}</span></p>
+      <div class="product-info"><p class="overline">FEMMORA / ${escape(product.category)}</p><h1 class="product-title">${escape(product.name)}</h1><p class="product-price">${discovery.priceMarkup(product)}</p><p class="product-description">${escape(product.description)}</p><p class="color-line">Colour <span>${escape(product.color)}</span></p>
         <div class="size-label"><span>Size — <span id="chosen-size">${selectedSize}</span></span><a href="#/faq?section=sizing">Size help</a></div>
         <div class="sizes" role="group" aria-label="Choose a size">${sizes.map((size) => `<button class="size-button ${size === selectedSize ? 'active' : ''}" data-action="size" data-size="${size}" aria-pressed="${size === selectedSize}">${size}</button>`).join('')}</div>
         <span class="quantity-label">Quantity</span><div id="product-quantity-control">${quantityControl(productQuantity, 'product')}</div>
@@ -206,7 +210,7 @@ function openDialog(dialog) {
 }
 
 function closeDialogs() {
-  [searchDialog, bagDialog, zoomDialog].forEach((dialog) => { if (dialog.open) dialog.close(); });
+  [...document.querySelectorAll('dialog')].forEach((dialog) => { if (dialog.open) dialog.close(); });
 }
 
 function openSearch() {
@@ -244,7 +248,7 @@ function addToCart(id) {
 
 function openAddedToBag(item, added) {
   const product = getProduct(item.id);
-  bagDialog.innerHTML = `<button class="icon-button dialog-close" data-action="close-dialog" aria-label="Close bag confirmation">${icon('close')}</button><h2 id="bag-title" class="bag-notification-title">${icon('check')}${added ? 'Added to your bag' : 'Your bag has the maximum quantity'}</h2><div class="bag-added-product"><img src="${asset(product)}" alt="${escape(product.name)}" width="90" height="112" /><div><h3>${escape(product.name)}</h3><p>Size: ${item.size} · Quantity: ${item.quantity}</p><p>${money(product.price)}</p></div></div><a href="#/cart" class="btn btn-full">View bag (${cartCount()})</a><a href="#/checkout" class="btn btn-dark btn-full">Check out</a><button class="continue-button" data-action="close-dialog">Continue shopping</button>`;
+  bagDialog.innerHTML = `<button class="icon-button dialog-close" data-action="close-dialog" aria-label="Close bag confirmation">${icon('close')}</button><h2 id="bag-title" class="bag-notification-title">${icon('check')}${added ? 'Added to your bag' : 'Your bag has the maximum quantity'}</h2><div class="bag-added-product"><img src="${asset(product)}" alt="${escape(product.name)}" width="90" height="112" /><div><h3>${escape(product.name)}</h3><p>Size: ${item.size} · Quantity: ${item.quantity}</p><p>${money(priceFor(product))}</p></div></div><a href="#/cart" class="btn btn-full">View bag (${cartCount()})</a><a href="#/checkout" class="btn btn-dark btn-full">Check out</a><button class="continue-button" data-action="close-dialog">Continue shopping</button>`;
   openDialog(bagDialog);
 }
 
@@ -252,7 +256,7 @@ function renderCart() {
   if (!cart.length) { main.innerHTML = `<div class="empty-state"><p class="overline">A little room for something lovely</p><h1>Your bag is waiting.</h1><p>Find a piece that feels like you.</p><a class="btn btn-dark" href="#/shop">Explore the collection ${icon('arrow')}</a></div>`; return; }
   main.innerHTML = `<div class="page-shell cart-page"><div class="cart-heading"><h1>Your bag <span class="muted" style="font-size:18px">(${cartCount()})</span></h1><a href="#/shop" class="text-link">Continue shopping</a></div><div class="cart-labels"><span>Product</span><span>Quantity</span><span>Total</span></div><div class="cart-items">${cart.map((item) => {
     const product = getProduct(item.id);
-    return `<article class="cart-item"><div class="cart-item-product"><a href="#/product/${item.id}" tabindex="-1" aria-hidden="true"><img src="${asset(product)}" alt="" width="105" height="130" /></a><div><h2><a href="#/product/${item.id}">${escape(product.name)}</a></h2><p>${money(product.price)}</p><p>Size: ${item.size} · ${escape(product.color)}</p></div></div><div class="cart-item-quantity">${quantityControl(item.quantity, keyFor(item), `${product.name}, size ${item.size}, quantity`)}<button class="icon-button" data-action="remove" data-key="${keyFor(item)}" aria-label="Remove ${escape(product.name)}, size ${item.size}">${icon('trash')}</button></div><p class="cart-item-total">${money(product.price * item.quantity)}</p></article>`;
+    return `<article class="cart-item"><div class="cart-item-product"><a href="#/product/${item.id}" tabindex="-1" aria-hidden="true"><img src="${asset(product)}" alt="" width="105" height="130" /></a><div><h2><a href="#/product/${item.id}">${escape(product.name)}</a></h2><p>${money(priceFor(product))}</p><p>Size: ${item.size} · ${escape(product.color)}</p></div></div><div class="cart-item-quantity">${quantityControl(item.quantity, keyFor(item), `${product.name}, size ${item.size}, quantity`)}<button class="icon-button" data-action="remove" data-key="${keyFor(item)}" aria-label="Remove ${escape(product.name)}, size ${item.size}">${icon('trash')}</button></div><p class="cart-item-total">${money(priceFor(product) * item.quantity)}</p></article>`;
   }).join('')}</div><div class="cart-summary"><div class="total-line"><span>Estimated total</span><span>${money(cartTotal())}</span></div><p>Preview prices. Delivery charges and final totals will be confirmed when online orders open.</p><a href="#/checkout" class="btn btn-dark btn-full">Check out ${icon('arrow')}</a><p style="text-align:center;margin-top:14px">${storageAvailable ? 'Your bag is saved in this browser.' : 'Your bag is available for this visit.'}</p></div></div>`;
 }
 
@@ -277,13 +281,15 @@ function renderCheckout() {
   if (!cart.length) return renderCart();
   main.innerHTML = `<div class="checkout-page"><div class="checkout-top"><p class="overline">FEMMORA</p><h1>A little closer to yours.</h1><p>Online checkout is coming soon. Your bag is ready for when the store opens. No payment has been taken.</p></div><div class="checkout-summary">${cart.map((item) => {
     const product = getProduct(item.id);
-    return `<div class="checkout-summary-row"><img src="${asset(product)}" alt="${escape(product.name)}" width="55" height="70" /><div><h2>${escape(product.name)}</h2><p>${item.size} / Qty ${item.quantity}</p></div><span>${money(product.price * item.quantity)}</span></div>`;
+    return `<div class="checkout-summary-row"><img src="${asset(product)}" alt="${escape(product.name)}" width="55" height="70" /><div><h2>${escape(product.name)}</h2><p>${item.size} / Qty ${item.quantity}</p></div><span>${money(priceFor(product) * item.quantity)}</span></div>`;
   }).join('')}<div class="total-line"><span>Preview subtotal</span><span>${money(cartTotal())}</span></div><p class="muted" style="font-size:13px;line-height:1.8">Delivery costs and final prices will be shown before payment once online checkout is available.</p></div><div class="checkout-actions"><a class="text-link" href="#/cart">Back to your bag</a><a class="text-link" href="#/shop">Keep exploring</a></div></div>`;
 }
 
 function renderFAQ(section) {
-  main.innerHTML = `<div class="page-shell faq-page"><p class="overline muted">A little help</p><h1 class="faq-title">FAQ & customer care.</h1><div class="faq-layout"><nav class="faq-index" aria-label="Customer care sections">${[['orders', 'Orders'], ['delivery', 'Delivery'], ['sizing', 'Sizing & fit'], ['returns', 'Returns & exchanges'], ['care', 'Caring for your pieces'], ['contact', 'Get in touch']].map(([id, name]) => `<a href="#/faq?section=${id}" data-action="faq-section" data-section="${id}">${name}</a>`).join('')}</nav><div class="faq-copy">
+  main.innerHTML = `<div class="page-shell faq-page"><p class="overline muted">A little help</p><h1 class="faq-title">FAQ & customer care.</h1><div class="faq-layout"><nav class="faq-index" aria-label="Customer care sections">${[['orders', 'Orders'], ['releases', 'Offers & drops'], ['reservations', 'Reservations'], ['delivery', 'Delivery'], ['sizing', 'Sizing & fit'], ['returns', 'Returns & exchanges'], ['care', 'Caring for your pieces'], ['contact', 'Get in touch']].map(([id, name]) => `<a href="#/faq?section=${id}" data-action="faq-section" data-section="${id}">${name}</a>`).join('')}</nav><div class="faq-copy">
     <section id="faq-orders"><h2>Orders</h2><h3>How do I shop FEMMORA?</h3><p>Explore the collection, choose your size and add your favourites to your bag. You can change quantities or remove pieces in your bag before checking out.</p><h3>Is online checkout open?</h3><p>This is a first look at FEMMORA’s online store. Online checkout is coming soon. Product names, prices and available sizes shown in this preview will be confirmed before orders open.</p></section>
+    <section id="faq-releases"><h2>Offers & new drops</h2><h3>How does the countdown work?</h3><p>The Little Treat Edit has one fixed sample end date. While this preview offer is active, its discounted prices appear in the collection, product pages and bag. When it ends, the normal preview prices return. Offer details and dates are examples until FEMMORA confirms them.</p><h3>Can I get notified about a drop?</h3><p>Explore Upcoming Drops and select Notify me to preview the email signup. No email address is stored, no subscription is created and no messages are sent in this demo. Follow @femmora_gh for current updates.</p><a href="#/drops" class="text-link">See what is coming next</a></section>
+    <section id="faq-reservations"><h2>Reservations</h2><h3>Can I reserve a piece before release?</h3><p>The First Picks page lets you browse example upcoming edits, choose a size and quantity, and save a reservation preview. It does not submit a reservation, hold stock or take payment. Release dates, sizes, availability and reservation terms will be confirmed before real requests open.</p><h3>Where is my preview saved?</h3><p>Your chosen piece, size and quantity are saved on this device when browser storage is available. Your name and email address are not saved or sent. You can remove saved previews from the First Picks page.</p><a href="#/reserve" class="text-link">Browse the early edit</a></section>
     <section id="faq-delivery"><h2>Delivery</h2><h3>Where does FEMMORA deliver?</h3><p>Delivery areas, charges and estimated timeframes will be published here before the online store opens for orders.</p><h3>Will I see delivery costs before paying?</h3><p>The final checkout will show the applicable delivery charge and your complete order total before payment.</p></section>
     <section id="faq-sizing"><h2>Sizing & fit</h2><h3>Which size should I choose?</h3><p>Fit can vary from piece to piece. Check each product’s details and contact FEMMORA for current measurements or help choosing your size.</p><p>Sizes shown in this preview are examples. Confirmed measurements and availability will be added before launch.</p></section>
     <section id="faq-returns"><h2>Returns & exchanges</h2><h3>What is the returns policy?</h3><p>FEMMORA’s final returns and exchanges policy will be published here before online checkout opens. Please review it before placing an order.</p></section>
@@ -305,10 +311,13 @@ function render() {
   closeDialogs();
   renderHeader();
   renderFooter();
-  const titles = { home: 'The Everyday, Reimagined', shop: 'The Collection', cart: 'Your Bag', faq: 'FAQ & Customer Care', checkout: 'Checkout Preview', search: 'Search' };
+  const titles = { home: 'The Everyday, Reimagined', shop: 'The Collection', cart: 'Your Bag', faq: 'FAQ & Customer Care', checkout: 'Checkout Preview', search: 'Search', promotions: 'The Little Treat Edit', drops: 'Upcoming Drops', reserve: 'First Picks & Reservation Previews' };
   document.title = `FEMMORA — ${current.name === 'product' ? getProduct(current.id)?.name || 'Collection' : titles[current.name] || 'Explore'}`;
   if (isHome) renderHome();
   else if (current.name === 'shop') renderShop();
+  else if (current.name === 'promotions') discovery.renderPromotions();
+  else if (current.name === 'drops') discovery.renderDrops();
+  else if (current.name === 'reserve') discovery.renderReserve(current.query.get('drop'));
   else if (current.name === 'product') renderProduct(current.id);
   else if (current.name === 'cart') renderCart();
   else if (current.name === 'checkout') renderCheckout();
@@ -326,6 +335,7 @@ document.addEventListener('click', async (event) => {
   const target = event.target.closest('[data-action]');
   if (!target) return;
   const action = target.dataset.action;
+  if (discovery.handleClick(action, target)) return;
   if (action === 'menu') { menuOpen = !menuOpen; renderHeader(); $('.mobile-menu-toggle')?.focus(); }
   else if (action === 'search') openSearch();
   else if (action === 'close-dialog') target.closest('dialog')?.close();
@@ -339,6 +349,7 @@ document.addEventListener('click', async (event) => {
   else if (action === 'faq-section' && window.location.hash === target.getAttribute('href')) { $(`#faq-${CSS.escape(target.dataset.section)}`)?.scrollIntoView({ block: 'start' }); }
 });
 
+document.addEventListener('submit', discovery.handleSubmit);
 document.addEventListener('input', (event) => { if (event.target.id === 'search-input') updateSearch(event.target.value); });
 document.addEventListener('change', (event) => {
   if (event.target.id === 'sort') { collectionSort = event.target.value; renderShop(); $('#sort').focus({ preventScroll: true }); }
@@ -348,7 +359,7 @@ document.addEventListener('keydown', (event) => {
   if (event.key === 'Enter' && event.target.id === 'search-input') { const query = event.target.value.trim(); searchDialog.close(); window.location.hash = `/search?q=${encodeURIComponent(query)}`; }
   if (event.key === 'Escape' && menuOpen) { menuOpen = false; renderHeader(); $('.mobile-menu-toggle')?.focus(); }
 });
-for (const dialog of [searchDialog, bagDialog, zoomDialog]) {
+for (const dialog of document.querySelectorAll('dialog')) {
   dialog.addEventListener('click', (event) => { if (event.target !== dialog) return; const rect = dialog.getBoundingClientRect(); if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) dialog.close(); });
   dialog.addEventListener('close', () => { if (dialogTrigger?.isConnected) dialogTrigger.focus({ preventScroll: true }); });
 }
