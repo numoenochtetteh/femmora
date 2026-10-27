@@ -65,14 +65,27 @@
   .bag-count { position: absolute; right: 0; bottom: 1px; display: grid; place-items: center; font-size: 11px; background: var(--ink); color: white; border-radius: 50%; min-width: 15px; height: 15px; padding: 2px; }
   .mobile-menu-toggle, .mobile-nav { display: none; }
   .is-home .site-header { position: absolute; inset: 0 0 auto; background: transparent; color: white; border: 0; }
-  .is-home .header-logo, .is-home .desktop-nav, .is-home .currency-label { visibility: hidden; }
+  .is-home .header-logo { filter: brightness(0) invert(1); }
+  .is-home .desktop-nav a { color: #fff; }
+  .is-home .site-header :focus-visible { outline-color: white; }
+  .is-home .mobile-nav :focus-visible { outline-color: var(--ink); }
+  .is-home .currency-label { display: none; }
   .is-home .bag-count { background: white; color: var(--ink); }
-  .is-home .mobile-menu-toggle { visibility: hidden; }
   .is-home .site-footer { display: none; }
-  .entrance { position: relative; min-height: 100vh; min-height: 100svh; overflow: hidden; display: grid; place-items: center; color: white; isolation: isolate; }
+  .entrance { position: relative; min-height: 100vh; min-height: 100svh; overflow: hidden; display: grid; align-items: center; color: white; isolation: isolate; }
   .entrance video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 58%; z-index: -3; }
-  .entrance::after { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg,rgba(20,16,13,.15),rgba(20,16,13,.38) 45%,rgba(20,16,13,.42)); }
-  .entrance-center { text-align: center; padding: 30px; transform: translateY(-2%); }
+  .entrance::after { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg,rgba(19,16,13,.76),rgba(19,16,13,.47) 62%,rgba(19,16,13,.2)),linear-gradient(180deg,rgba(19,16,13,.24),transparent 35%,rgba(19,16,13,.2)); }
+  .entrance-center { width: 100%; max-width: 1680px; margin-inline: auto; text-align: left; padding: 150px 6vw 145px; }
+  .hero-eyebrow { font-size: 14px; font-weight: 500; letter-spacing: .13em; text-transform: uppercase; margin-bottom: 24px; }
+  .entrance h1 { max-width: 850px; font-size: clamp(58px, 6.4vw, 98px); letter-spacing: -.055em; line-height: 1.04; text-wrap: balance; }
+  .hero-description { max-width: 600px; margin-top: 27px; font-size: clamp(17px, 1.4vw, 21px); line-height: 1.65; }
+  .hero-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 24px 32px; margin-top: 34px; }
+  .hero-shop { min-height: 56px; min-width: 240px; font-size: 16px; font-weight: 500; border-color: white; background: white; color: var(--ink); }
+  .hero-shop:hover { background: #e9e7e3; color: var(--ink); border-color: #e9e7e3; }
+  .hero-sale { display: inline-flex; align-items: center; gap: 12px; min-height: 48px; font-size: 16px; border-bottom: 1px solid #ffffff80; }
+  .hero-sale:hover { border-color: white; }
+  .hero-sale .icon { width: 17px; height: 17px; }
+  .hero-detail { margin-top: 22px; font-size: 14px; letter-spacing: .025em; }
   .entrance-wordmark { font-size: clamp(44px, 5.2vw, 70px); margin-bottom: 36px; text-shadow: 0 1px 30px #0002; }
   .entrance-nav { display: flex; flex-direction: column; align-items: center; gap: 17px; }
   .entrance-nav a { font-weight: 500; position: relative; font-size: 15px; letter-spacing: .08em; padding: 4px 15px; }
@@ -218,6 +231,23 @@
   .footer-bottom { display: flex; align-items: center; justify-content: space-between; gap: 20px; color: var(--muted); font-size: 12px; }
 }
 @layer responsive {
+  @media(min-width:641px) and (max-height:760px) {
+    .entrance-center { padding-block: 120px 110px; }
+    .entrance h1 { font-size: clamp(46px, 5.6vw, 72px); }
+    .hero-eyebrow { font-size: 12px; margin-bottom: 18px; }
+    .hero-description { font-size: 18px; margin-top: 20px; }
+    .hero-actions { margin-top: 26px; }
+    .hero-detail { margin-top: 16px; font-size: 13px; }
+  }
+  @media(min-width:641px) and (max-height:500px) {
+    .entrance-center { padding-block: 96px 85px; }
+    .entrance h1 { font-size: 40px; line-height: 1.04; }
+    .hero-eyebrow, .hero-detail, .entrance-caption { display: none; }
+    .hero-description { font-size: 16px; line-height: 1.5; margin-top: 14px; }
+    .hero-copy-break { display: none; }
+    .hero-actions { margin-top: 20px; }
+    .hero-shop { min-height: 50px; }
+  }
   @media(min-width:641px) {
     .entrance video { object-fit: cover; object-position: 50% 50%; }
   }
@@ -240,6 +270,11 @@
     .product-info { padding-top: 0; }
     .faq-layout { grid-template-columns: 150px 1fr; gap: 40px; }
     .currency-label { display: none; }
+    .is-home .desktop-nav { display: none; }
+    .is-home .mobile-menu-toggle { display: inline-flex; }
+    .is-home .mobile-nav { display: flex; position: absolute; top: 80px; left: 0; right: 0; background: white; color: var(--ink); flex-direction: column; padding: 22px 24px; gap: 22px; border-bottom: 1px solid var(--line); box-shadow: 0 15px 20px #00000004; }
+    .is-home .mobile-nav a { font-size: 15px; text-transform: uppercase; letter-spacing: .07em; }
+    .entrance-center { padding-inline: 6vw; }
   }
   @media(max-width:640px) {
     body { font-size: 16px; }
@@ -253,7 +288,18 @@
     .mobile-menu-toggle .icon { width: 19px; }
     .mobile-nav { display: flex; position: absolute; top: 76px; left: 0; right: 0; background: white; color: var(--ink); flex-direction: column; padding: 15px 25px 25px; gap: 22px; border-bottom: 1px solid var(--line); box-shadow: 0 15px 20px #00000004; }
     .mobile-nav a { font-size: 15px; text-transform: uppercase; letter-spacing: .07em; }
-    .is-home .header-logo { display: none; }
+    .is-home .header-logo { display: block; width: 116px; }
+    .is-home .mobile-nav { top: 76px; }
+    .entrance-center { padding: 125px 24px 155px; }
+    .entrance::after { background: linear-gradient(90deg,rgba(19,16,13,.63),rgba(19,16,13,.3)),linear-gradient(180deg,rgba(19,16,13,.25),rgba(19,16,13,.15) 30%,rgba(19,16,13,.55)); }
+    .hero-eyebrow { font-size: 12px; letter-spacing: .11em; margin-bottom: 20px; }
+    .entrance h1 { font-size: clamp(40px, 10.5vw, 62px); line-height: 1.07; letter-spacing: -.05em; }
+    .hero-description { font-size: 17px; margin-top: 22px; max-width: 430px; }
+    .hero-copy-break { display: none; }
+    .hero-actions { gap: 16px 24px; margin-top: 27px; }
+    .hero-shop { min-width: 0; width: 100%; max-width: 340px; padding-inline: 18px; }
+    .hero-sale { min-height: 44px; font-size: 15px; }
+    .hero-detail { font-size: 12px; margin-top: 18px; }
     .entrance-brand { width: 185px; margin-bottom: 26px; }
     .entrance-nav { gap: 21px; }
     .entrance-nav a { font-size: 15px; }

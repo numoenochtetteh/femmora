@@ -1,12 +1,14 @@
 import { products, sizes, categories } from './catalog.js';
 import { offerFor, priceFor } from './campaigns.js';
 import { createDiscovery } from './discovery.js';
+import { favouritesStorageKey, readFavourites, writeFavourites } from './favourites.js';
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const main = $('#main');
 const searchDialog = $('#search-dialog');
 const bagDialog = $('#bag-dialog');
 const zoomDialog = $('#zoom-dialog');
+const favouritesDialog = $('#favourites-dialog');
 const instagram = 'https://www.instagram.com/femmora_gh/';
 const escape = (value) => String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
 const money = (value) => new Intl.NumberFormat('en-GH', { style: 'currency', currency: 'GHS', currencyDisplay: 'narrowSymbol', minimumFractionDigits: 2 }).format(value);
@@ -21,6 +23,9 @@ const keyFor = (item) => `${item.id}:${item.size}`;
 const maxQuantity = 10;
 let storageAvailable = true;
 let cart = readCart();
+const favouriteState = readFavourites(() => window.localStorage, products.map((product) => product.id));
+let favourites = favouriteState.ids;
+let favouritesPersistent = favouriteState.persistent;
 let collectionFilter = 'All';
 let collectionSort = 'featured';
 let selectedSize = 'S';
@@ -32,6 +37,7 @@ let dialogTrigger = null;
 const paths = {
   search: '<circle cx="10.8" cy="10.8" r="7.5"/><path d="m16.3 16.3 5 5"/>',
   bag: '<path d="M5 7h14l1 14H4L5 7Z"/><path d="M8 7V5a4 4 0 0 1 8 0v2"/>',
+  heart: '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/>',
   bell: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/>',
   close: '<path d="m5 5 14 14M19 5 5 19"/>',
   arrow: '<path d="M4 12h15m-5-5 5 5-5 5"/>',
@@ -45,7 +51,7 @@ const paths = {
 };
 const icon = (name) => `<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">${paths[name] || ''}</svg>`;
 const announce = (message) => { $('#announcer').textContent = message; };
-const discovery = createDiscovery({ $, main, icon, money, escape, asset, getProduct, sizes, productCard, openDialog, announce, onPricingChange: () => { if (!document.hidden) render(); } });
+const discovery = createDiscovery({ $, main, icon, money, escape, asset, getProduct, products, sizes, productCard, favouriteButton, openDialog, announce, onPricingChange: () => { if (!document.hidden) render(); } });
 
 function readCart() {
   try {
@@ -84,22 +90,36 @@ function renderHeader() {
   const nav = [['Home', '#/', 'home'], ['Shop', '#/shop', 'shop'], ['Sale', '#/promotions', 'promotions'], ['Coming soon', '#/drops', 'drops'], ['FAQ', '#/faq', 'faq']];
   const links = nav.map(([label, url, name]) => `<a href="${url}" ${current === name ? 'class="active" aria-current="page"' : ''}>${label}</a>`).join('');
   $('#header').innerHTML = `
-    <button class="icon-button mobile-menu-toggle" data-action="menu" aria-label="${menuOpen ? 'Close' : 'Open'} navigation" aria-expanded="${menuOpen}" aria-controls="mobile-nav">${icon(menuOpen ? 'close' : 'menu')}</button>
     <a class="header-logo" href="#/" aria-label="FEMMORA home">${brandMark()}</a>
     <nav class="desktop-nav" aria-label="Main navigation">${links}</nav>
     <div class="header-tools">
       <span class="currency-label">GHS ₵ <span class="muted">/ Ghana</span></span>
       <button class="icon-button" data-action="search" aria-label="Search the collection">${icon('search')}</button>
+      <a class="icon-button favourites-link" href="#/favourites" aria-label="Favourites, ${favourites.length} saved ${favourites.length === 1 ? 'item' : 'items'}" ${current === 'favourites' ? 'aria-current="page"' : ''}>${icon('heart')}<span class="favourites-count" ${favourites.length ? '' : 'hidden'} aria-hidden="true">${favourites.length}</span></a>
       <a class="icon-button bag-button" href="#/cart" aria-label="Shopping bag, ${count} ${count === 1 ? 'item' : 'items'}">${icon('bag')}${count ? `<span class="bag-count" aria-hidden="true">${count}</span>` : ''}</a>
+      <button class="icon-button mobile-menu-toggle" data-action="menu" aria-label="${menuOpen ? 'Close' : 'Open'} navigation" aria-expanded="${menuOpen}" aria-controls="mobile-nav">${icon(menuOpen ? 'close' : 'menu')}</button>
     </div>
-    ${menuOpen ? `<nav id="mobile-nav" class="mobile-nav" aria-label="Mobile navigation">${links}</nav>` : ''}`;
+    ${menuOpen ? `<button type="button" class="menu-backdrop" data-action="menu-close" aria-label="Close navigation menu" tabindex="-1"></button><nav id="mobile-nav" class="mobile-nav" aria-label="Mobile navigation">${links}<a href="#/favourites" ${current === 'favourites' ? 'class="active" aria-current="page"' : ''}>Favourites <span class="mobile-favourites-count">(${favourites.length})</span></a></nav>` : ''}`;
+}
+
+function updateHeaderAppearance() {
+  document.body.classList.toggle('header-scrolled', window.scrollY > 24);
+  document.body.classList.toggle('menu-is-open', menuOpen);
+}
+
+function closeMenu({ restoreFocus = false } = {}) {
+  if (!menuOpen) return;
+  menuOpen = false;
+  renderHeader();
+  updateHeaderAppearance();
+  if (restoreFocus) $('.mobile-menu-toggle')?.focus({ preventScroll: true });
 }
 
 function renderFooter() {
   $('#footer').innerHTML = `
     <div class="footer-content">
       <div class="footer-note"><span class="overline muted">Stay in touch</span><h2>Get new drop updates.</h2><p>New styles, release dates and offers from FEMMORA.</p><button class="text-link footer-signup-button" data-action="notify">Preview email signup ↗</button><a class="text-link" href="${instagram}" target="_blank" rel="noopener noreferrer">Follow @femmora_gh ↗</a></div>
-      <nav class="footer-links" aria-label="Explore"><span class="overline">Explore</span><a href="#/shop">Shop the collection</a><a href="#/promotions">Shop sale</a><a href="#/drops">Coming soon</a><a href="#/reserve">Reserve styles</a><a href="#/faq">FAQ & customer care</a><a href="#/cart">Your bag</a></nav>
+      <nav class="footer-links" aria-label="Explore"><span class="overline">Explore</span><a href="#/shop">Shop the collection</a><a href="#/favourites">Your favourites</a><a href="#/promotions">Shop sale</a><a href="#/drops">Coming soon</a><a href="#/reserve">Reserve styles</a><a href="#/faq">FAQ & customer care</a><a href="#/cart">Your bag</a></nav>
       <nav class="footer-links" aria-label="Find us"><span class="overline">Find us</span><a href="${instagram}" target="_blank" rel="noopener noreferrer">Instagram ↗</a><span>Accra, Ghana · GHS ₵</span></nav>
     </div>
     <div class="footer-brand" aria-hidden="true">${brandMark()}</div>
@@ -109,15 +129,19 @@ function renderFooter() {
 function renderHome() {
   const media = heroMedia();
   main.innerHTML = `
-    <section class="entrance" aria-label="Welcome to FEMMORA">
+    <section class="entrance" aria-labelledby="hero-heading">
       <video id="entrance-film" src="${media.src}" data-variant="${media.variant}" autoplay muted loop playsinline preload="metadata" poster="${media.poster}" aria-hidden="true"></video>
       <div class="entrance-center">
-        <h1 class="sr-only">FEMMORA</h1>${brandMark('entrance-brand')}
-        <nav class="entrance-nav" aria-label="Enter FEMMORA"><a href="#/" aria-current="page">HOME</a><a href="#/shop">SHOP</a><a href="#/promotions">SALE</a><a href="#/drops">COMING SOON</a><a href="#/faq">FAQ</a></nav>
+        <p class="hero-eyebrow">FEMMORA / Women’s clothing</p>
+        <h1 id="hero-heading">Your next<br>favourite outfit</h1>
+        <p class="hero-description">Dresses, tops, bottoms and matching sets.<br class="hero-copy-break"> For everyday plans and nights out.</p>
+        <div class="hero-actions"><a class="btn hero-shop" href="#/shop">Shop the collection ${icon('arrow')}</a><a class="hero-sale" href="#/promotions">Shop sale ${icon('arrowup')}</a></div>
+        <p class="hero-detail">Based in Accra · Prices in GHS</p>
       </div>
-      <button class="entrance-caption home-scroll" data-action="home-discover">Scroll to shop ↓</button>
+      <button class="entrance-caption home-scroll" data-action="home-discover" aria-label="Explore clothing categories">Explore the collection ${icon('arrow')}</button>
       <div class="entrance-bottom"><button id="film-toggle" class="film-toggle" data-action="film" aria-label="Pause background video">${icon('pause')}<span>Pause film</span></button><a href="${instagram}" target="_blank" rel="noopener noreferrer">@FEMMORA_GH ↗</a></div>
     </section>${discovery.homeSections()}`;
+  discovery.mountCarousels();
   const video = $('#entrance-film');
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   video.muted = true;
@@ -151,10 +175,81 @@ function updateFilmButton() {
 }
 
 function productCard(product, index = 9) {
-  return `<article class="product-card">${offerFor(product.id) ? '<span class="offer-badge">' + offerFor(product.id).percentOff + '% off / preview</span>' : ''}
+  return `<article class="product-card">${offerFor(product.id) ? '<span class="offer-badge">' + offerFor(product.id).percentOff + '% off<span class="sr-only"> / preview price</span></span>' : ''}
+    ${favouriteButton(product)}
     <a href="#/product/${product.id}" class="product-photo" aria-label="View ${escape(product.name)}"><img src="${asset(product)}" alt="${escape(product.color + ' ' + product.name)}" width="800" height="1000" loading="${index < 5 ? 'eager' : 'lazy'}" decoding="async" /><span class="product-view" aria-hidden="true">View product ${icon('arrow')}</span></a>
     <div class="product-card-info"><h2><a href="#/product/${product.id}">${escape(product.name)}</a></h2><p>${discovery.priceMarkup(product)}</p></div>
   </article>`;
+}
+
+function favouriteButton(product, context = 'card') {
+  const saved = favourites.includes(product.id);
+  return `<button type="button" class="favourite-toggle ${saved ? 'is-saved' : ''} ${context === 'product' ? 'favourite-product-action' : ''}" data-action="favourite" data-id="${product.id}" data-favourite-context="${context}" aria-pressed="${saved}" aria-label="${saved ? 'Remove' : 'Save'} ${escape(product.name)} ${saved ? 'from' : 'to'} favourites">${icon('heart')}${context === 'product' ? `<span data-favourite-label>${saved ? 'Saved to favourites' : 'Save to favourites'}</span>` : ''}</button>`;
+}
+
+function syncFavouriteControls() {
+  document.querySelectorAll('[data-action="favourite"]').forEach((button) => {
+    const product = getProduct(button.dataset.id);
+    if (!product) return;
+    const saved = favourites.includes(product.id);
+    button.classList.toggle('is-saved', saved);
+    button.setAttribute('aria-pressed', String(saved));
+    button.setAttribute('aria-label', `${saved ? 'Remove' : 'Save'} ${product.name} ${saved ? 'from' : 'to'} favourites`);
+    const label = $('[data-favourite-label]', button);
+    if (label) label.textContent = saved ? 'Saved to favourites' : 'Save to favourites';
+  });
+  const link = $('.favourites-link');
+  if (link) {
+    link.setAttribute('aria-label', `Favourites, ${favourites.length} saved ${favourites.length === 1 ? 'item' : 'items'}`);
+    const count = $('.favourites-count', link);
+    count.textContent = favourites.length;
+    count.hidden = !favourites.length;
+  }
+  const mobileCount = $('.mobile-favourites-count');
+  if (mobileCount) mobileCount.textContent = `(${favourites.length})`;
+}
+
+function favouriteList() {
+  if (!favourites.length) return `<div class="favourites-empty">${icon('heart')}<h2>Nothing saved yet.</h2><p>Tap the heart on a style you love. Find it here whenever you’re ready.</p><a href="#/shop" class="btn btn-dark">Explore the collection ${icon('arrow')}</a></div>`;
+  return `<div class="product-grid favourites-grid">${favourites.map((id) => {
+    const product = getProduct(id);
+    return `<div class="favourites-item">${productCard(product)}<button type="button" class="btn btn-full favourite-choose" data-action="favourite-choose" data-id="${id}" aria-label="Choose size and add ${escape(product.name)} to bag">Choose size & add ${icon('bag')}</button></div>`;
+  }).join('')}</div>`;
+}
+
+function renderFavourites() {
+  main.innerHTML = `<div class="page-shell favourites-page"><header class="favourites-heading"><div><p class="overline">Saved for later</p><h1 tabindex="-1">Your favourites.</h1><p>Keep the pieces you love in one place. Choose a size when you’re ready to add one to your bag.</p></div><a class="text-link" href="#/shop">Continue shopping ${icon('arrowup')}</a></header><div class="favourites-summary"><span id="favourites-total">${favourites.length} ${favourites.length === 1 ? 'style' : 'styles'} saved</span><p id="favourites-storage-note">${favouritesPersistent ? 'Saved on this device.' : 'Browser storage is unavailable. Favourites are kept for this visit.'}</p></div><div id="favourites-list">${favouriteList()}</div></div>`;
+}
+
+function refreshFavouriteList() {
+  if (route().name !== 'favourites') return;
+  $('#favourites-list').innerHTML = favouriteList();
+  $('#favourites-total').textContent = `${favourites.length} ${favourites.length === 1 ? 'style' : 'styles'} saved`;
+  $('#favourites-storage-note').textContent = favouritesPersistent ? 'Saved on this device.' : 'Browser storage is unavailable. Favourites are kept for this visit.';
+}
+
+function toggleFavourite(id) {
+  const product = getProduct(id);
+  if (!product) return;
+  const previousIndex = favourites.indexOf(id);
+  const saved = previousIndex === -1;
+  favourites = saved ? [id, ...favourites] : favourites.filter((value) => value !== id);
+  favouritesPersistent = writeFavourites(() => window.localStorage, favourites);
+  syncFavouriteControls();
+  refreshFavouriteList();
+  announce(`${product.name} ${saved ? 'saved to' : 'removed from'} your favourites.${favouritesPersistent ? '' : ' Saved for this visit only.'}`);
+  if (route().name === 'favourites') {
+    const controls = [...document.querySelectorAll('#favourites-list [data-action="favourite"]')];
+    (controls[Math.min(Math.max(previousIndex, 0), controls.length - 1)] || $('.favourites-heading h1'))?.focus({ preventScroll: true });
+  }
+}
+
+function openFavouriteOptions(id) {
+  const product = getProduct(id);
+  if (!product) return;
+  favouritesDialog.innerHTML = `<button type="button" class="icon-button dialog-close" data-action="close-dialog" aria-label="Close size selection">${icon('close')}</button><div class="favourite-dialog-product"><img src="${asset(product)}" alt="${escape(product.name)}" width="100" height="125" /><div><p class="overline">From your favourites</p><h2 id="favourites-dialog-title">${escape(product.name)}</h2><p>${discovery.priceMarkup(product)}</p></div></div><form data-favourite-form data-id="${id}"><label for="favourite-size">Choose your size</label><select id="favourite-size" name="size" required><option value="" selected disabled>Select a size</option>${sizes.map((size) => `<option value="${size}">${size}</option>`).join('')}</select><label for="favourite-quantity">Quantity</label><input id="favourite-quantity" type="number" name="quantity" min="1" max="${maxQuantity}" step="1" value="1" required /><p class="favourite-form-error" role="alert"></p><button type="submit" class="btn btn-dark btn-full">Add to bag ${icon('bag')}</button><p class="favourite-size-note">Sample sizes · Final availability will be confirmed before launch.</p></form>`;
+  openDialog(favouritesDialog);
+  $('#favourite-size').focus();
 }
 
 function sortedProducts(list) {
@@ -196,7 +291,7 @@ function renderProduct(id) {
         <div class="size-label"><span>Size — <span id="chosen-size">${selectedSize}</span></span><a href="#/faq?section=sizing">Size help</a></div>
         <div class="sizes" role="group" aria-label="Choose a size">${sizes.map((size) => `<button class="size-button ${size === selectedSize ? 'active' : ''}" data-action="size" data-size="${size}" aria-pressed="${size === selectedSize}">${size}</button>`).join('')}</div>
         <span class="quantity-label">Quantity</span><div id="product-quantity-control">${quantityControl(productQuantity, 'product')}</div>
-        <button class="btn btn-dark btn-full add-button" data-action="add" data-id="${id}">Add to bag ${icon('arrow')}</button><p class="launch-note">Collection preview · Final details and prices to be confirmed.</p>
+        <button class="btn btn-dark btn-full add-button" data-action="add" data-id="${id}">Add to bag ${icon('arrow')}</button>${favouriteButton(product, 'product')}<p class="launch-note">Collection preview · Final details and prices to be confirmed.</p>
         <div class="detail-accordion"><details><summary>The details</summary><div class="details-content"><ul>${product.details.map((detail) => `<li>${escape(detail)}</li>`).join('')}</ul></div></details><details><summary>Size & fit</summary><div class="details-content">Sample sizes are shown for this preview. For current fit advice, <a class="text-link" href="${instagram}" target="_blank" rel="noopener noreferrer">contact FEMMORA</a> before ordering.</div></details><details><summary>Delivery & returns</summary><div class="details-content">Delivery areas, charges and the returns policy will be confirmed before online orders open. <a class="text-link" href="#/faq?section=delivery">Visit customer care</a>.</div></details></div>
       </div>
     </div>
@@ -235,14 +330,15 @@ function renderSearch(query) {
   main.innerHTML = `<div class="page-shell"><div class="section-heading"><h1 style="font-size:24px;letter-spacing:-.03em">${query ? `Results for “${escape(query)}”` : 'The collection'}</h1><button class="text-link" data-action="search">Search again</button></div><p class="muted" style="font-size:14px;margin-bottom:25px">${matches.length} pieces</p>${matches.length ? `<div class="product-grid">${matches.map(productCard).join('')}</div>` : '<div class="empty-state"><p>No pieces found. Try another search.</p><a class="btn" href="#/shop">Explore the collection</a></div>'}</div>`;
 }
 
-function addToCart(id) {
-  const existing = cart.find((item) => item.id === id && item.size === selectedSize);
-  if (existing && existing.quantity + productQuantity > maxQuantity) { announce(`You can add up to ${maxQuantity} of the same size. Your bag already has ${existing.quantity}.`); openAddedToBag(existing, false); return; }
-  if (existing) existing.quantity += productQuantity;
-  else cart.push({ id, size: selectedSize, quantity: productQuantity });
+function addToCart(id, { size = selectedSize, quantity = productQuantity } = {}) {
+  if (!getProduct(id) || !sizes.includes(size) || !Number.isInteger(quantity) || quantity < 1 || quantity > maxQuantity) return;
+  const existing = cart.find((item) => item.id === id && item.size === size);
+  if (existing && existing.quantity + quantity > maxQuantity) { announce(`You can add up to ${maxQuantity} of the same size. Your bag already has ${existing.quantity}.`); openAddedToBag(existing, false); return; }
+  if (existing) existing.quantity += quantity;
+  else cart.push({ id, size, quantity });
   persistCart();
-  const added = { id, size: selectedSize, quantity: productQuantity };
-  announce(`${getProduct(id).name}, size ${selectedSize}, added to your bag.`);
+  const added = { id, size, quantity };
+  announce(`${getProduct(id).name}, size ${size}, added to your bag.`);
   openAddedToBag(added, true);
 }
 
@@ -311,35 +407,61 @@ function render() {
   closeDialogs();
   renderHeader();
   renderFooter();
-  const titles = { home: 'Women’s Clothing', shop: 'The Collection', cart: 'Your Bag', faq: 'FAQ & Customer Care', checkout: 'Checkout Preview', search: 'Search', promotions: 'Sale', drops: 'Coming Soon', reserve: 'Reservation Preview' };
+  const titles = { home: 'Women’s Clothing', shop: 'The Collection', favourites: 'Your Favourites', cart: 'Your Bag', faq: 'FAQ & Customer Care', checkout: 'Checkout Preview', search: 'Search', promotions: 'Sale', drops: 'Coming Soon', reserve: 'Reservation Preview' };
   document.title = `FEMMORA — ${current.name === 'product' ? getProduct(current.id)?.name || 'Collection' : titles[current.name] || 'Explore'}`;
   if (isHome) renderHome();
-  else if (current.name === 'shop') renderShop();
+  else if (current.name === 'shop') {
+    const requestedCategory = current.query.get('category');
+    collectionFilter = categories.includes(requestedCategory) ? requestedCategory : 'All';
+    renderShop();
+  }
   else if (current.name === 'promotions') discovery.renderPromotions();
   else if (current.name === 'drops') discovery.renderDrops();
   else if (current.name === 'reserve') discovery.renderReserve(current.query.get('drop'));
   else if (current.name === 'product') renderProduct(current.id);
   else if (current.name === 'cart') renderCart();
+  else if (current.name === 'favourites') renderFavourites();
   else if (current.name === 'checkout') renderCheckout();
   else if (current.name === 'faq') renderFAQ(current.query.get('section'));
   else if (current.name === 'search') renderSearch(current.query.get('q') || '');
   else renderNotFound();
   window.scrollTo(0, 0);
+  updateHeaderAppearance();
   main.focus({ preventScroll: true });
 }
 
 document.addEventListener('click', async (event) => {
+  if (menuOpen && !event.target.closest('#header')) closeMenu();
   if (event.target.closest('a[href="#main"]')) { event.preventDefault(); main.focus(); main.scrollIntoView({ block: 'start' }); return; }
   const navigationLink = event.target.closest('a[href^="#/"]');
-  if (navigationLink) closeDialogs();
+  if (navigationLink) {
+    closeDialogs();
+    if (navigationLink.getAttribute('href') === window.location.hash) closeMenu();
+  }
   const target = event.target.closest('[data-action]');
   if (!target) return;
   const action = target.dataset.action;
   if (discovery.handleClick(action, target)) return;
-  if (action === 'menu') { menuOpen = !menuOpen; renderHeader(); $('.mobile-menu-toggle')?.focus(); }
-  else if (action === 'search') openSearch();
+  if (action === 'menu') { menuOpen = !menuOpen; renderHeader(); updateHeaderAppearance(); $('.mobile-menu-toggle')?.focus({ preventScroll: true }); }
+  else if (action === 'menu-close') closeMenu({ restoreFocus: true });
+  else if (action === 'favourite') toggleFavourite(target.dataset.id);
+  else if (action === 'favourite-choose') openFavouriteOptions(target.dataset.id);
+  else if (action === 'search') {
+    if (menuOpen) {
+      closeMenu();
+      $('[data-action="search"]', $('#header'))?.focus({ preventScroll: true });
+    }
+    openSearch();
+  }
   else if (action === 'close-dialog') target.closest('dialog')?.close();
-  else if (action === 'filter') { collectionFilter = target.dataset.category; renderShop(); [...document.querySelectorAll('[data-action="filter"]')].find((button) => button.dataset.category === collectionFilter)?.focus({ preventScroll: true }); announce(`Showing ${collectionFilter.toLowerCase()} products.`); }
+  else if (action === 'filter') {
+    collectionFilter = categories.includes(target.dataset.category) ? target.dataset.category : 'All';
+    const destination = collectionFilter === 'All' ? '#/shop' : '#/shop?category=' + encodeURIComponent(collectionFilter);
+    history.replaceState(null, '', destination);
+    renderShop();
+    [...document.querySelectorAll('[data-action="filter"]')].find((button) => button.dataset.category === collectionFilter)?.focus({ preventScroll: true });
+    announce(`Showing ${collectionFilter.toLowerCase()} products.`);
+  }
   else if (action === 'size') { selectedSize = target.dataset.size; document.querySelectorAll('[data-action="size"]').forEach((button) => { const active = button.dataset.size === selectedSize; button.classList.toggle('active', active); button.setAttribute('aria-pressed', String(active)); }); $('#chosen-size').textContent = selectedSize; }
   else if (action === 'quantity') { const context = target.dataset.context; const current = context === 'product' ? productQuantity : cart.find((item) => keyFor(item) === context)?.quantity; updateQuantity(context, current + Number(target.dataset.delta), target.dataset.delta); }
   else if (action === 'add') addToCart(target.dataset.id);
@@ -350,6 +472,23 @@ document.addEventListener('click', async (event) => {
 });
 
 document.addEventListener('submit', discovery.handleSubmit);
+document.addEventListener('submit', (event) => {
+  const form = event.target;
+  if (!form.matches('[data-favourite-form]')) return;
+  event.preventDefault();
+  const data = new FormData(form);
+  const size = data.get('size');
+  const quantity = Number(data.get('quantity'));
+  const id = form.dataset.id;
+  const error = $('.favourite-form-error', form);
+  if (!sizes.includes(size) || !Number.isInteger(quantity) || quantity < 1 || quantity > maxQuantity || !getProduct(id)) { error.textContent = 'Choose a valid size and a quantity from 1 to 10.'; return; }
+  const existing = cart.find((item) => item.id === id && item.size === size);
+  if ((existing?.quantity || 0) + quantity > maxQuantity) { error.textContent = `Your bag already has ${existing.quantity} in this size. You can add up to ${maxQuantity} in total.`; return; }
+  const trigger = dialogTrigger;
+  favouritesDialog.close();
+  if (trigger?.isConnected) trigger.focus({ preventScroll: true });
+  addToCart(id, { size, quantity });
+});
 document.addEventListener('input', (event) => { if (event.target.id === 'search-input') updateSearch(event.target.value); });
 document.addEventListener('change', (event) => {
   if (event.target.id === 'sort') { collectionSort = event.target.value; renderShop(); $('#sort').focus({ preventScroll: true }); }
@@ -357,14 +496,35 @@ document.addEventListener('change', (event) => {
 });
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Enter' && event.target.id === 'search-input') { const query = event.target.value.trim(); searchDialog.close(); window.location.hash = `/search?q=${encodeURIComponent(query)}`; }
-  if (event.key === 'Escape' && menuOpen) { menuOpen = false; renderHeader(); $('.mobile-menu-toggle')?.focus(); }
+  if (event.key === 'Escape' && menuOpen) closeMenu({ restoreFocus: true });
 });
+document.addEventListener('focusin', (event) => {
+  if (menuOpen && !event.target.closest('#header')) closeMenu();
+});
+document.addEventListener('touchmove', (event) => {
+  const panel = event.target.closest('#mobile-nav');
+  if (menuOpen && (!panel || panel.scrollHeight <= panel.clientHeight)) closeMenu();
+}, { passive: true });
+window.addEventListener('wheel', (event) => {
+  const panel = event.target.closest('#mobile-nav');
+  if (menuOpen && event.deltaY && (!panel || panel.scrollHeight <= panel.clientHeight)) closeMenu();
+}, { passive: true });
+window.addEventListener('scroll', () => { closeMenu(); updateHeaderAppearance(); }, { passive: true });
+window.addEventListener('resize', () => closeMenu());
 for (const dialog of document.querySelectorAll('dialog')) {
   dialog.addEventListener('click', (event) => { if (event.target !== dialog) return; const rect = dialog.getBoundingClientRect(); if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) dialog.close(); });
-  dialog.addEventListener('close', () => { if (dialogTrigger?.isConnected) dialogTrigger.focus({ preventScroll: true }); });
+  dialog.addEventListener('close', () => { if (!document.querySelector('dialog[open]') && dialogTrigger?.isConnected) dialogTrigger.focus({ preventScroll: true }); });
 }
-document.addEventListener('visibilitychange', () => { const video = $('#entrance-film'); if (video && document.hidden) video.pause(); });
-window.addEventListener('storage', (event) => { if (event.key === 'femmora-bag-v1') { cart = readCart(); renderHeader(); if (route().name === 'cart') renderCart(); if (route().name === 'checkout') renderCheckout(); } });
+document.addEventListener('visibilitychange', () => { const video = $('#entrance-film'); if (document.hidden) { closeMenu(); if (video) video.pause(); } });
+window.addEventListener('storage', (event) => { if (event.key === 'femmora-bag-v1' || event.key === null) { cart = readCart(); renderHeader(); if (route().name === 'cart') renderCart(); if (route().name === 'checkout') renderCheckout(); } });
+window.addEventListener('storage', (event) => {
+  if (event.key !== favouritesStorageKey && event.key !== null) return;
+  const latest = readFavourites(() => window.localStorage, products.map((product) => product.id));
+  favourites = latest.ids;
+  favouritesPersistent = latest.persistent;
+  syncFavouriteControls();
+  refreshFavouriteList();
+});
 window.addEventListener('hashchange', render);
 wideHeroScreen.addEventListener('change', syncHeroMedia);
 render();

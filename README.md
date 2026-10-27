@@ -1,4 +1,4 @@
-# FEMMORA website — version 5
+# FEMMORA website — version 11
 
 A complete editable clothing storefront with the supplied FEMMORA video and 13 product photos. It uses plain HTML, CSS and JavaScript, with no third-party runtime dependencies.
 
@@ -108,7 +108,7 @@ The public production site and logo image need to be accessible to messaging-app
 
 ## Version 6: offers, upcoming drops and first picks
 
-The original video entrance remains the first screen. Scroll below it to see the new offer feature, upcoming-release cards, Reservations introduction and email-signup preview.
+The video hero remains the first screen, now with a visible headline, product description and shopping buttons. Scroll below it to see the offer feature, upcoming-release cards, Reservations introduction and email-signup preview.
 
 New routes:
 
@@ -150,3 +150,88 @@ The sale now states the discount and eligible styles directly. Upcoming collecti
 Reference storefronts reviewed: Zara, Mango, H&M, Oh Polly, MESHKI and Christie Brown. The FEMMORA wording is original; no brand claims or policies were copied.
 
 The examples still use the same editable promotion dates and product selections. Signup and reservation forms remain clearly labelled previews. No price, stock, payment, email or reservation service configuration changed in this copy update.
+
+## Version 8: a homepage that leads into shopping
+
+The first screen now introduces what FEMMORA sells and gives visitors a clear next step:
+
+- Headline: **Outfits worth making plans for.**
+- Supporting copy: **Dresses, matching sets and easy everyday pieces. Find your next look with FEMMORA.**
+- Primary action: **Shop the collection**.
+- Secondary action: **Shop sale**.
+- Local context: **Based in Accra · Prices in GHS**.
+
+The supplied logo is smaller in the top navigation. The separate phone and landscape films remain in place, with a stronger contrast overlay for readable text. Home navigation is visible on desktop; phones and tablets use a menu button. Search, the bag, video pause and reduced-motion preferences are retained.
+
+Edit this hero in `renderHome()` in `app.js`; its layout is in `styles.css`. This update does not turn preview forms or checkout into live services.
+
+`OUTREACH.md` contains the MadeBySebi lead-selection criteria, three preliminary leads to qualify and the email-profile checklist. It is an internal handoff document and is excluded from the website build.
+
+To update the existing GitHub project, replace its website files with this folder's files, then run:
+
+```powershell
+npm run build
+git add .
+git commit -m "Improve FEMMORA homepage hero"
+git push
+```
+
+Keep your existing Git history, repository remote, local environment files and Vercel project link. Your connected Vercel project will deploy after the push. This ZIP does not push or deploy your public Vercel project on its own.
+
+## Version 9: a homepage built around browsing clothing
+
+- The desktop navigation is centred independently of the logo and utility icons.
+- On phones and tablets, the logo sits left and search, bag and menu sit right.
+- The hero explicitly introduces FEMMORA as a women's clothing brand. Phones use a smaller Shop the collection button and hide the sale link and location/currency line.
+- Immediately after the hero, four category cards show one representative style each: Tops, Sets, Bottoms and Dresses. The background is the existing #EBECE9. These are a row of four on desktop and swipe horizontally on phones.
+- Category cards open shareable filtered collection links such as #/shop?category=Dresses. Opening the general Shop route resets to All; category filters preserve the selected URL when sorting or opening product pages.
+- A four-product section with prices follows the categories, ahead of the existing example promotion.
+- Coming soon is now a horizontal carousel on both the home and release pages. Native scrolling supports touch, and arrows, indicator buttons and keyboard controls support browsing. The focused slide track accepts Left/Right, Home and End. It does not auto-advance. Reduced-motion preferences are respected.
+
+The release images, names, dates, View collection actions and notification forms remain together on each slide. Reservations and notification forms remain previews, and checkout does not take payment.
+
+The new layout is in `storefront.css`, loaded after the original styles. Category, product and carousel content lives in `discovery.js`. The header and hero are in `app.js`. The build script includes `storefront.css`; copy it with the other files when updating an existing project.
+
+The design reference review focused on the category discovery and shopping paths on Oh Polly, MESHKI and Aritzia. FEMMORA uses its own supplied logo, videos and product photos. No unverified sales, reviews, best-seller rankings or shipping promises were added.
+
+## Version 10: persistent brand header and mobile navigation fixes
+
+- Hero headline: **Your next favourite outfit**.
+- The original copper logo appears on a white header from the first screen.
+- The header remains at the top when scrolling in either direction, on all routes and screen sizes.
+- A shared header-height value reserves page space and offsets anchor scrolling so content is not hidden behind the header.
+- The mobile menu closes after an outside tap, page scrolling, Escape, a route change, search, or a window resize. Selecting the already-open page also dismisses it.
+- Navigation remains scrollable inside its panel when the screen is too short to show all links.
+- Escape and outside dismissal return focus to the menu control without moving the page; search returns focus to its own control when closed.
+- General route changes scroll immediately to the top. Explicit category/release scrolling and reduced-motion support remain in place.
+
+The category cards, product prices, collection slider, video variants and smaller mobile shopping button from version 9 are retained. The only files changed for the website are `app.js` and `storefront.css`.
+
+Copy the updated project files into your existing repository, build with `npm run build`, then commit and push to update the connected Vercel deployment. Keep your existing Git history and Vercel configuration.
+
+### Version 10 review
+
+Reviewed at 320×568, 390×844, 640×800, 768×1024, 960×720, 1024×768, 1280×800 and 844×390 viewport sizes. The page stays within the viewport width and the main shopping action remains visible on the first screen at these sizes.
+
+Checked outside-tap dismissal, scrolling, Escape and focus return, search from an open menu, reopening the current page, navigation to Shop and FAQ, and resizing between mobile and desktop navigation. The landscape menu fits within the viewport. Desktop navigation remains centred.
+
+Confirmed that a scrolled FAQ section remains below the fixed header, that the bag popup opens below the header, and that adding/removing a test item still works. The test bag was cleared. The production build and all four existing campaign/reservation tests passed.
+
+## Version 11: Favourites and a transparent home header
+
+- Tap a heart to save/remove a product from cards, search, related products, product pages or upcoming-product reservation previews.
+- The header heart shows the saved-item count. Favourites is also linked from the mobile menu and footer.
+- Open `#/favourites` to browse saved products, remove them or choose a size and quantity before adding to the bag. Adding to the bag keeps the product in Favourites.
+- Favourites persist in this browser, update across open tabs and recover safely from invalid saved data. If browser storage is blocked, the list remains available for the current visit and the page explains the limitation. There is no account or cross-device sync.
+- The home header is transparent over the video at the top, turns white after scrolling 24px, and returns to transparent at the top. The copper logo remains in its original colour. Other pages have a white header; opening the mobile menu also makes it white for readability.
+- Mobile header spacing accommodates search, favourites, bag and menu, including narrow 320px screens. The existing outside-tap, scroll, Escape, navigation and resize menu dismissal is retained.
+
+`favourites.js` owns saved-ID validation and storage. `app.js` contains the user interface and add-to-bag flow. `storefront.css` styles Favourites and the changing header. The build includes the new module. Run `npm test` and `npm run build` before deployment.
+
+See `LIVE-STORE-STATUS.md` for what is working locally and what still needs a connected live commerce service.
+
+### Version 11 review
+
+All seven automated tests passed. The production build passed. Browser checks covered saving/removing from cards, search, upcoming-product previews and a product page; persistence after refresh; live updates across tabs; empty-state recovery; and size/quantity selection into the bag. Submitting without a size was blocked. Adding beyond the ten-per-size limit showed an error. A test quantity of two in size M produced the correct GH₵352 bag total and was cleared afterwards.
+
+Checked 320, 390, 640, 768, 844, 960, 1024 and 1280px layouts for page overflow and header fit. Verified the home header is transparent at the top, white while scrolling, and returns to transparent at the top. Mobile outside-tap and scroll dismissal remain working. Test favourites and bag contents were cleared.

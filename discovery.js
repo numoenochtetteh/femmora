@@ -1,6 +1,6 @@
 import { campaign, drops, campaignStatus, offerFor, priceFor, countdownParts, dropStatus, isReservable } from './campaigns.js';
 
-export function createDiscovery({ $, main, icon, money, escape, asset, getProduct, sizes, productCard, openDialog, announce, onPricingChange }) {
+export function createDiscovery({ $, main, icon, money, escape, asset, getProduct, products, sizes, productCard, favouriteButton, openDialog, announce, onPricingChange }) {
   const dialog = $('#discovery-dialog');
   const storageKey = 'femmora-reservation-previews-v1';
   let reservations = readReservations();
@@ -61,13 +61,76 @@ export function createDiscovery({ $, main, icon, money, escape, asset, getProduc
       '<div class="offer-stamp"><strong>' + (ended ? 'Offer' : campaign.percentOff + '%') + '</strong><span>' + (ended ? 'ended' : active ? 'off' : 'coming soon') + '</span></div></div></section>';
   }
 
-  function dropCard(drop) {
+  function dropCard(drop, index) {
     const product = getProduct(drop.productIds[0]);
     const upcoming = dropStatus(drop) === 'upcoming';
-    return '<article class="drop-card"><div class="drop-art"><span class="drop-number">DROP ' + drop.number + '</span><img src="' + asset(product) + '" alt="' + escape(product.name) + ' from the ' + escape(drop.name) + ' preview collection" width="800" height="1000" loading="lazy" />' +
+    return '<article class="drop-card" role="group" aria-roledescription="slide" aria-label="' + (index + 1) + ' of ' + drops.length + ': ' + escape(drop.name) + '"><div class="drop-art"><span class="drop-number">DROP ' + drop.number + '</span><img src="' + asset(product) + '" alt="' + escape(product.name) + ' from the ' + escape(drop.name) + ' preview collection" width="800" height="1000" loading="lazy" />' +
       '<span class="drop-image-tag">' + (upcoming ? 'Coming soon' : 'Release preview') + '</span></div>' +
       '<div class="drop-card-copy"><p class="drop-date">Release · ' + releaseDate(drop) + '</p><h3>' + escape(drop.name) + '</h3><p>' + escape(drop.tagline) + '</p>' +
-      '<div class="drop-card-actions"><a class="text-link" href="#/reserve?drop=' + drop.id + '">' + (upcoming ? 'View collection' : 'View collection') + icon('arrowup') + '</a><button class="drop-notify" data-action="notify" data-drop="' + drop.id + '" aria-label="Preview notifications for ' + escape(drop.name) + '">' + icon('bell') + '<span>Notify me</span></button></div></div></article>';
+      '<div class="drop-card-actions"><a class="text-link" href="#/reserve?drop=' + drop.id + '">View collection' + icon('arrowup') + '</a><button class="drop-notify" data-action="notify" data-drop="' + drop.id + '" aria-label="Preview notifications for ' + escape(drop.name) + '">' + icon('bell') + '<span>Notify me</span></button></div></div></article>';
+  }
+
+  function categorySection() {
+    const categories = [
+      { name: 'Tops', productId: 'gingham-halter', caption: 'The outfit starts here.' },
+      { name: 'Sets', productId: 'gingham-coord', caption: 'A match made easy.' },
+      { name: 'Bottoms', productId: 'washed-denim-shorts', caption: 'Build your everyday look.' },
+      { name: 'Dresses', productId: 'polka-dot-dress', caption: 'One piece. All your plans.' },
+    ];
+    return '<section class="home-categories" aria-labelledby="category-heading"><div class="home-section-heading"><div><p class="overline">The FEMMORA collection</p><h2 id="category-heading">Shop by category.</h2></div><a class="text-link" href="#/shop">Shop all clothing ' + icon('arrowup') + '</a></div>' +
+      '<nav class="category-rail" aria-label="Shop clothing categories">' + categories.map((category) => {
+        const product = getProduct(category.productId);
+        return '<a class="category-card" href="#/shop?category=' + category.name + '" aria-label="Shop ' + category.name.toLowerCase() + '"><span class="category-art"><img src="' + asset(product) + '" alt="' + escape(product.name) + '" width="800" height="1000" loading="lazy" decoding="async" /></span><span class="category-label"><span>' + category.name + '</span>' + icon('arrowup') + '</span><span class="category-caption">' + category.caption + '</span></a>';
+      }).join('') + '</nav><p class="category-swipe-hint">Swipe to explore all four categories ' + icon('arrow') + '</p></section>';
+  }
+
+  function featuredSection() {
+    const selected = ['blue-stripe-shirt', 'gingham-shorts', 'everyday-tank', 'gingham-coord'].map(getProduct);
+    return '<section class="home-products" aria-labelledby="home-products-heading"><div class="home-section-heading"><div><p class="overline">Find your next favourite</p><h2 id="home-products-heading">The collection.</h2></div><a class="text-link" href="#/shop">View all ' + products.length + ' styles ' + icon('arrowup') + '</a></div><div class="product-grid home-product-grid">' + selected.map((product) => productCard(product)).join('') + '</div><p class="home-products-note">Choose a style to see the details and available size options.</p></section>';
+  }
+
+  function dropCarousel(id) {
+    return '<div class="drop-carousel" role="region" aria-roledescription="carousel" aria-label="Upcoming FEMMORA collections"><div id="' + id + '" class="drop-track" tabindex="0" aria-label="Collection slides. Use the left and right arrow keys to browse.">' + drops.map(dropCard).join('') + '</div>' +
+      '<div class="carousel-controls"><span class="carousel-count" aria-live="polite" aria-atomic="true">Collection <span data-carousel-current>1</span> of ' + drops.length + '</span><div class="carousel-dots">' + drops.map((drop, index) => '<button class="carousel-dot" data-action="drop-slide" data-index="' + index + '" aria-label="Show ' + escape(drop.name) + ', collection ' + (index + 1) + ' of ' + drops.length + '" aria-current="' + (index === 0 ? 'true' : 'false') + '" aria-controls="' + id + '"><span></span></button>').join('') + '</div><div class="carousel-arrows"><button class="carousel-arrow carousel-prev" data-action="drop-previous" aria-label="Previous collection" aria-controls="' + id + '" disabled>' + icon('arrow') + '</button><button class="carousel-arrow carousel-next" data-action="drop-next" aria-label="Next collection" aria-controls="' + id + '">' + icon('arrow') + '</button></div></div></div>';
+  }
+
+  function currentSlide(track) {
+    const slides = [...track.children];
+    const first = slides[0]?.offsetLeft || 0;
+    return slides.reduce((nearest, slide, index) => Math.abs(slide.offsetLeft - first - track.scrollLeft) < Math.abs(slides[nearest].offsetLeft - first - track.scrollLeft) ? index : nearest, 0);
+  }
+
+  function updateCarousel(track) {
+    const carousel = track.closest('.drop-carousel');
+    const index = currentSlide(track);
+    $('[data-carousel-current]', carousel).textContent = index + 1;
+    $('.carousel-prev', carousel).disabled = index === 0;
+    $('.carousel-next', carousel).disabled = index === track.children.length - 1;
+    carousel.querySelectorAll('.carousel-dot').forEach((button, position) => button.setAttribute('aria-current', String(position === index)));
+  }
+
+  function goToSlide(carousel, index) {
+    const track = $('.drop-track', carousel);
+    const position = Math.max(0, Math.min(track.children.length - 1, index));
+    track.scrollTo({ left: track.children[position].offsetLeft - track.children[0].offsetLeft, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+  }
+
+  function mountCarousels() {
+    main.querySelectorAll('.drop-track').forEach((track) => {
+      let pendingFrame = false;
+      track.addEventListener('scroll', () => {
+        if (pendingFrame) return;
+        pendingFrame = true;
+        requestAnimationFrame(() => { pendingFrame = false; if (track.isConnected) updateCarousel(track); });
+      }, { passive: true });
+      track.addEventListener('keydown', (event) => {
+        if (event.target !== track || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+        event.preventDefault();
+        const index = event.key === 'Home' ? 0 : event.key === 'End' ? track.children.length - 1 : currentSlide(track) + (event.key === 'ArrowRight' ? 1 : -1);
+        goToSlide(track.closest('.drop-carousel'), index);
+      });
+      updateCarousel(track);
+    });
   }
 
   function signupSection() {
@@ -76,9 +139,9 @@ export function createDiscovery({ $, main, icon, money, escape, asset, getProduc
   }
 
   function homeSections() {
-    return '<div class="home-discovery" id="home-discovery"><div class="discovery-intro"><div><p class="overline">Shop FEMMORA</p><h2>Shop the latest.<br>See what’s next.</h2></div><div><p>Shop the collection, browse the sale or see what’s coming next.</p><div class="intro-links"><a href="#/promotions" class="text-link">Shop sale ' + icon('arrowup') + '</a><a href="#/drops" class="text-link">View upcoming drops ' + icon('arrowup') + '</a></div></div></div>' +
-      offerFeature() + '<section class="drops-section" aria-labelledby="home-drops-heading"><div class="discovery-heading"><div><p class="overline">New collections</p><h2 id="home-drops-heading">Coming soon.</h2></div><a class="text-link" href="#/drops">View all upcoming drops ' + icon('arrowup') + '</a></div>' + previewNotice +
-      '<div class="drop-grid">' + drops.map(dropCard).join('') + '</div></section>' +
+    return '<div class="home-discovery" id="home-discovery">' + categorySection() + featuredSection() +
+      '<div class="home-offer-wrap">' + offerFeature() + '</div><section class="drops-section home-drops" aria-labelledby="home-drops-heading"><div class="home-section-heading"><div><p class="overline">The next collections</p><h2 id="home-drops-heading">Coming soon.</h2></div><a class="text-link" href="#/drops">View upcoming drops ' + icon('arrowup') + '</a></div>' + previewNotice +
+      dropCarousel('home-drop-track') + '</section>' +
       '<section class="reserve-feature" aria-labelledby="reserve-feature-heading"><span class="reserve-feature-number" aria-hidden="true">01 / 02 / 03</span><p class="overline">Before the drop</p><h2 id="reserve-feature-heading">Reserve your favourites<br>before they drop.</h2><p>Browse upcoming styles and choose your size before the release.</p><a href="#/reserve" class="btn btn-dark">Browse upcoming styles ' + icon('arrow') + '</a><small>Preview reservations only. No stock is held or payment taken.</small></section>' +
       signupSection() + '</div>';
   }
@@ -94,13 +157,14 @@ export function createDiscovery({ $, main, icon, money, escape, asset, getProduc
 
   function renderDrops() {
     main.innerHTML = '<div class="discovery-page"><div class="discovery-breadcrumb"><a href="#/">Home</a><span>/</span><span>Coming soon</span></div><header class="discovery-page-heading"><p class="overline">Upcoming releases</p><h1>New styles.<br>Coming soon.</h1><p>See the next collections, check the release dates and choose your favourites.</p><div class="page-heading-actions"><a href="#/reserve" class="btn btn-dark">Browse upcoming styles ' + icon('arrow') + '</a><button class="text-link" data-action="notify">Get notified</button></div></header>' +
-      previewNotice + '<section aria-labelledby="drop-list-heading"><h2 id="drop-list-heading" class="sr-only">Upcoming collections</h2><div class="drop-grid">' + drops.map(dropCard).join('') + '</div></section>' +
+      previewNotice + '<section aria-labelledby="drop-list-heading"><h2 id="drop-list-heading" class="sr-only">Upcoming collections</h2>' + dropCarousel('all-drop-track') + '</section>' +
       '<section class="drop-explainer"><div><span>01</span><h2>Browse upcoming styles.</h2><p>See what is coming in each collection.</p></div><div><span>02</span><h2>Choose your size.</h2><p>Select a style, size and quantity to preview a reservation.</p></div><div><span>03</span><h2>Get release updates.</h2><p>Try the email signup preview. Subscriptions open at launch.</p></div></section>' + signupSection() + '</div>';
+    mountCarousels();
   }
 
   function reservationCard(product, drop) {
     const available = isReservable(drop.id, product.id);
-    return '<article class="reserve-card"><div class="reserve-card-art"><img src="' + asset(product) + '" alt="' + escape(product.name) + '" width="800" height="1000" loading="lazy" /><span>' + escape(drop.name) + ' / Preview</span></div>' +
+    return '<article class="reserve-card"><div class="reserve-card-art">' + favouriteButton(product) + '<img src="' + asset(product) + '" alt="' + escape(product.name) + '" width="800" height="1000" loading="lazy" /><span>' + escape(drop.name) + ' / Preview</span></div>' +
       '<div class="reserve-card-copy"><p class="drop-date">Release · ' + releaseDate(drop) + '</p><h2>' + escape(product.name) + '</h2><p>' + escape(product.description) + '</p><div class="reserve-card-bottom"><span>Preview price<br><strong>' + money(product.price) + '</strong></span><button class="btn" data-action="reserve" data-drop="' + drop.id + '" data-product="' + product.id + '" ' + (available ? '' : 'disabled') + '>' + (available ? 'Preview reservation' : 'Reservations closed') + (available ? icon('arrow') : '') + '</button></div></div></article>';
   }
 
@@ -180,6 +244,12 @@ export function createDiscovery({ $, main, icon, money, escape, asset, getProduc
 
   function handleClick(action, target) {
     if (action === 'notify') openSignup(target.dataset.drop);
+    else if (action === 'drop-previous' || action === 'drop-next' || action === 'drop-slide') {
+      const carousel = target.closest('.drop-carousel');
+      const track = $('.drop-track', carousel);
+      const index = action === 'drop-slide' ? Number(target.dataset.index) : currentSlide(track) + (action === 'drop-next' ? 1 : -1);
+      goToSlide(carousel, index);
+    }
     else if (action === 'reserve') openReservation(target.dataset.drop, target.dataset.product);
     else if (action === 'offer-pieces') $('.offer-pieces')?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'start' });
     else if (action === 'home-discover') $('#home-discovery')?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'start' });
@@ -214,6 +284,7 @@ export function createDiscovery({ $, main, icon, money, escape, asset, getProduc
   }
 
   window.setInterval(tick, 1000);
+  window.addEventListener('resize', () => main.querySelectorAll('.drop-track').forEach(updateCarousel));
   document.addEventListener('visibilitychange', () => { if (!document.hidden) tick(); });
   window.addEventListener('storage', (event) => {
     if (event.key !== storageKey) return;
@@ -223,5 +294,5 @@ export function createDiscovery({ $, main, icon, money, escape, asset, getProduc
       $('.saved-section .discovery-heading > span').textContent = reservations.length + ' saved';
     }
   });
-  return { homeSections, renderPromotions, renderDrops, renderReserve, priceMarkup, handleClick, handleSubmit };
+  return { homeSections, renderPromotions, renderDrops, renderReserve, priceMarkup, handleClick, handleSubmit, mountCarousels };
 }

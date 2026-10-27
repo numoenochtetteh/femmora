@@ -8,7 +8,8 @@
   .desktop-nav { gap: 22px; }
   .site-header { gap: 40px; }
   .is-home .site-footer { display: block; }
-  .home-scroll { padding: 10px 0; text-underline-offset: 6px; }
+  .home-scroll { display: inline-flex; align-items: center; gap: 12px; padding: 10px 0; text-underline-offset: 6px; }
+  .home-scroll .icon { width: 15px; height: 15px; transform: rotate(90deg); }
   .home-scroll:hover { text-decoration: underline; }
   .entrance-nav { gap: 13px; }
   .home-discovery, .discovery-page { max-width: 1680px; margin-inline: auto; padding: 0 4vw; }
