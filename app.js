@@ -1,5 +1,5 @@
 import { products, sizes, categories } from './catalog.js';
-import { offerFor, priceFor } from './campaigns.js';
+import { campaign, campaignStatus, countdownParts, offerFor, priceFor } from './campaigns.js';
 import { createDiscovery } from './discovery.js';
 import { favouritesStorageKey, readFavourites, writeFavourites } from './favourites.js';
 
@@ -84,7 +84,26 @@ function route() {
   return { name: parts[0] || 'home', id: parts[1], query: new URLSearchParams(query) };
 }
 
+function renderOfferBar() {
+  const bar = $('#offer-bar');
+  const now = Date.now();
+  const state = campaignStatus(now);
+  const visible = state !== 'ended';
+  document.documentElement.classList.toggle('has-offer-bar', visible);
+  bar.hidden = !visible;
+  if (!visible) { bar.replaceChildren(); return; }
+  const scheduled = state === 'scheduled';
+  const deadline = scheduled ? campaign.startsAt : campaign.endsAt;
+  const endDate = new Intl.DateTimeFormat('en-GB', { timeZone: 'Africa/Accra', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(deadline));
+  const units = { days: 'd', hours: 'h', minutes: 'm', seconds: 's' };
+  bar.setAttribute('aria-label', `${campaign.name}${campaign.preview ? ' preview' : ''}`);
+  bar.innerHTML = `<p class="offer-bar-copy"><span>${campaign.percentOff}% off selected styles</span>${campaign.preview ? '<span class="offer-bar-preview">Preview offer</span>' : ''}</p>
+    <span class="offer-bar-timer" role="timer" aria-live="off" aria-label="Offer ${scheduled ? 'starts' : 'ends'} ${escape(endDate)} GMT"><span aria-hidden="true"><span class="offer-bar-timer-label">${scheduled ? 'Starts in' : 'Ends in'}</span>${Object.entries(countdownParts(deadline, now)).map(([unit, value]) => `<span class="offer-bar-unit"><span data-countdown="${unit}">${String(value).padStart(2, '0')}</span><span>${units[unit]}</span></span>`).join('')}</span></span>
+    <a class="offer-bar-link" href="#/promotions" aria-label="${scheduled ? 'Preview' : 'Shop'} the selected styles sale">${scheduled ? 'Preview sale' : 'Shop sale'} ${icon('arrow')}</a>`;
+}
+
 function renderHeader() {
+  renderOfferBar();
   const current = route().name;
   const count = cartCount();
   const nav = [['Home', '#/', 'home'], ['Shop', '#/shop', 'shop'], ['Sale', '#/promotions', 'promotions'], ['Coming soon', '#/drops', 'drops'], ['FAQ', '#/faq', 'faq']];
