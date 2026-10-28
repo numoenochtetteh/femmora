@@ -180,7 +180,7 @@
     .site-header .header-logo { width: 114px; }
     .site-header .header-tools { gap: 3px; }
     .site-header .icon-button { width: 36px; height: 44px; }
-    .is-home .entrance { min-height: clamp(560px, 82svh, 720px); }
+    .is-home .entrance { min-height: max(640px, 100svh); }
     .is-home .entrance-center { padding-top: calc(var(--header-height) + 48px); }
     .favourite-toggle { top: 7px; right: 7px; }
     .favourites-heading { flex-direction: column; align-items: start; gap: 22px; padding-top: 8px; }
