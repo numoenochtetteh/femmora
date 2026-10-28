@@ -97,9 +97,9 @@ function renderOfferBar() {
   const endDate = new Intl.DateTimeFormat('en-GB', { timeZone: 'Africa/Accra', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(deadline));
   const units = { days: 'd', hours: 'h', minutes: 'm', seconds: 's' };
   bar.setAttribute('aria-label', `${campaign.name}${campaign.preview ? ' preview' : ''}`);
-  bar.innerHTML = `<p class="offer-bar-copy"><span>${campaign.percentOff}% off selected styles</span>${campaign.preview ? '<span class="offer-bar-preview">Preview offer</span>' : ''}</p>
+  bar.innerHTML = `<p class="offer-bar-copy">${campaign.percentOff}% off selected styles</p>
     <span class="offer-bar-timer" role="timer" aria-live="off" aria-label="Offer ${scheduled ? 'starts' : 'ends'} ${escape(endDate)} GMT"><span aria-hidden="true"><span class="offer-bar-timer-label">${scheduled ? 'Starts in' : 'Ends in'}</span>${Object.entries(countdownParts(deadline, now)).map(([unit, value]) => `<span class="offer-bar-unit"><span data-countdown="${unit}">${String(value).padStart(2, '0')}</span><span>${units[unit]}</span></span>`).join('')}</span></span>
-    <a class="offer-bar-link" href="#/promotions" aria-label="${scheduled ? 'Preview' : 'Shop'} the selected styles sale">${scheduled ? 'Preview sale' : 'Shop sale'} ${icon('arrow')}</a>`;
+    <a class="offer-bar-link" href="#/promotions" aria-label="${scheduled ? 'Preview' : 'Shop'} the selected styles sale">${scheduled ? 'View collection' : 'Shop the sale'} ${icon('arrow')}</a>`;
 }
 
 function renderHeader() {

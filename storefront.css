@@ -7,7 +7,6 @@
   .offer-bar { position: fixed; inset: 0 0 auto; z-index: 35; height: var(--offer-bar-height); padding: 0 20px; display: flex; justify-content: center; align-items: center; gap: 30px; background: var(--copper); color: white; font-size: 13px; line-height: 20px; }
   .offer-bar[hidden] { display: none; }
   .offer-bar-copy { display: flex; align-items: center; justify-content: center; gap: 9px; font-weight: 500; white-space: nowrap; }
-  .offer-bar-preview { font-size: 10px; font-weight: 400; padding: 0 6px; border: 1px solid #ffffff66; border-radius: 2px; line-height: 18px; }
   .offer-bar-timer { white-space: nowrap; font-size: 12px; font-variant-numeric: tabular-nums; }
   .offer-bar-timer > span { display: inline-flex; align-items: center; gap: 7px; }
   .offer-bar-timer-label { margin-right: 2px; }
@@ -192,7 +191,6 @@
     :root.has-offer-bar { --offer-bar-height: 72px; }
     .offer-bar { display: grid; grid-template-columns: auto auto; grid-template-rows: 20px 44px; gap: 0 20px; padding: 4px 14px; }
     .offer-bar-copy { grid-column: 1 / -1; font-size: 13px; }
-    .offer-bar-preview { font-size: 9px; line-height: 16px; }
     .offer-bar-timer > span { gap: 5px; }
     .offer-bar-link { font-size: 12px; gap: 7px; }
     .site-header { height: var(--header-height); padding-inline: 20px; gap: 10px; }
