@@ -98,7 +98,7 @@ function renderOfferBar() {
   const units = { days: 'd', hours: 'h', minutes: 'm', seconds: 's' };
   bar.setAttribute('aria-label', `${campaign.name}${campaign.preview ? ' preview' : ''}`);
   bar.innerHTML = `<p class="offer-bar-copy">${campaign.percentOff}% off selected styles</p>
-    <span class="offer-bar-timer" role="timer" aria-live="off" aria-label="Offer ${scheduled ? 'starts' : 'ends'} ${escape(endDate)} GMT"><span aria-hidden="true"><span class="offer-bar-timer-label">${scheduled ? 'Starts in' : 'Ends in'}</span>${Object.entries(countdownParts(deadline, now)).map(([unit, value]) => `<span class="offer-bar-unit"><span data-countdown="${unit}">${String(value).padStart(2, '0')}</span><span>${units[unit]}</span></span>`).join('')}</span></span>
+    <span class="offer-bar-timer" role="timer" aria-live="off" aria-label="Offer ${scheduled ? 'starts' : 'ends'} ${escape(endDate)} GMT"><span aria-hidden="true"><span class="offer-bar-timer-label">${scheduled ? 'Starts in' : 'Ends in'}</span>${Object.entries(countdownParts(deadline, now)).map(([unit, value]) => `<span class="offer-bar-unit" data-offer-unit="${unit}"><span data-countdown="${unit}">${String(value).padStart(2, '0')}</span><span>${units[unit]}</span></span>`).join('')}</span></span>
     <a class="offer-bar-link" href="#/promotions" aria-label="${scheduled ? 'Preview' : 'Shop'} the selected styles sale">${scheduled ? 'View collection' : 'Shop the sale'} ${icon('arrow')}</a>`;
 }
 
@@ -151,14 +151,12 @@ function renderHome() {
     <section class="entrance" aria-labelledby="hero-heading">
       <video id="entrance-film" src="${media.src}" data-variant="${media.variant}" autoplay muted loop playsinline preload="metadata" poster="${media.poster}" aria-hidden="true"></video>
       <div class="entrance-center">
-        <p class="hero-eyebrow">FEMMORA / Women’s clothing</p>
+        <p class="hero-eyebrow">Women’s clothing</p>
         <h1 id="hero-heading">Your next<br>favourite outfit</h1>
-        <p class="hero-description">Dresses, tops, bottoms and matching sets.<br class="hero-copy-break"> For everyday plans and nights out.</p>
-        <div class="hero-actions"><a class="btn hero-shop" href="#/shop">Shop the collection ${icon('arrow')}</a><a class="hero-sale" href="#/promotions">Shop sale ${icon('arrowup')}</a></div>
-        <p class="hero-detail">Based in Accra · Prices in GHS</p>
+        <p class="hero-description">Dresses, tops, bottoms &amp; matching sets.<br>For everyday plans and nights out.</p>
+        <div class="hero-actions"><a class="btn hero-shop" href="#/shop">Shop the collection ${icon('arrow')}</a></div>
       </div>
-      <button class="entrance-caption home-scroll" data-action="home-discover" aria-label="Explore clothing categories">Explore the collection ${icon('arrow')}</button>
-      <div class="entrance-bottom"><button id="film-toggle" class="film-toggle" data-action="film" aria-label="Pause background video">${icon('pause')}<span>Pause film</span></button><a href="${instagram}" target="_blank" rel="noopener noreferrer">@FEMMORA_GH ↗</a></div>
+      <div class="entrance-bottom"><button id="film-toggle" class="film-toggle" data-action="film" aria-label="Pause background video">${icon('pause')}<span>Pause film</span></button><button class="hero-discover" data-action="home-discover" aria-label="Explore clothing categories">Explore the collection ${icon('arrow')}</button></div>
     </section>${discovery.homeSections()}`;
   discovery.mountCarousels();
   const video = $('#entrance-film');
