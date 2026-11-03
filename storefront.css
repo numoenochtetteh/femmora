@@ -111,7 +111,7 @@
   .hero-detail { font-size: 12px; margin-top: 20px; }
   .entrance-caption { bottom: 33px; font-size: 10px; }
   .entrance-bottom { bottom: 22px; }
-  .hero-discover { min-height: 44px; display: inline-flex; align-items: center; gap: 12px; font-size: 10px; letter-spacing: .09em; }
+  .hero-discover { margin-left: auto; min-height: 44px; display: inline-flex; align-items: center; gap: 12px; font-size: 10px; letter-spacing: .09em; }
   .hero-discover .icon { width: 15px; height: 15px; transform: rotate(90deg); }
 
   .home-categories { padding: 66px 0 0; }

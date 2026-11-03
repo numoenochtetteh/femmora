@@ -157,7 +157,7 @@ function renderHome() {
         <p class="hero-description">Dresses, tops, bottoms &amp; matching sets.<br>For everyday plans and nights out.</p>
         <div class="hero-actions"><a class="btn hero-shop" href="#/shop">Shop the collection ${icon('arrow')}</a></div>
       </div>
-      <div class="entrance-bottom"><button id="film-toggle" class="film-toggle" data-action="film" aria-label="Pause background video">${icon('pause')}<span>Pause film</span></button><button class="hero-discover" data-action="home-discover" aria-label="Explore clothing categories">Explore the collection ${icon('arrow')}</button></div>
+      <div class="entrance-bottom"><button class="hero-discover" data-action="home-discover" aria-label="Explore clothing categories">Explore the collection ${icon('arrow')}</button></div>
     </section>${discovery.homeSections()}`;
   discovery.mountCarousels();
   const video = $('#entrance-film');
@@ -168,20 +168,17 @@ function renderHome() {
   video.playsInline = true;
   video.loop = true;
   video.autoplay = heroPlaybackRequested;
-  video.addEventListener('pause', updateFilmButton);
-  video.addEventListener('play', updateFilmButton);
   video.addEventListener('canplay', attemptHeroPlayback);
   video.addEventListener('ended', attemptHeroPlayback);
   if (heroPlaybackRequested) attemptHeroPlayback();
   else video.pause();
-  updateFilmButton();
 }
 
 function attemptHeroPlayback() {
   const video = $('#entrance-film');
   if (!video || !heroPlaybackRequested || document.hidden || !video.paused) return;
   video.muted = true;
-  video.play().catch(updateFilmButton);
+  video.play().catch(() => {});
 }
 
 function syncHeroMedia() {
@@ -196,15 +193,6 @@ function syncHeroMedia() {
   video.load();
   if (heroPlaybackRequested) attemptHeroPlayback();
   else video.pause();
-  updateFilmButton();
-}
-
-function updateFilmButton() {
-  const video = $('#entrance-film');
-  const button = $('#film-toggle');
-  if (!video || !button) return;
-  button.innerHTML = `${icon(video.paused ? 'play' : 'pause')}<span>${video.paused ? 'Play film' : 'Pause film'}</span>`;
-  button.setAttribute('aria-label', `${video.paused ? 'Play' : 'Pause'} background video`);
 }
 
 function productCard(product, index = 9) {
@@ -500,16 +488,6 @@ document.addEventListener('click', async (event) => {
   else if (action === 'add') addToCart(target.dataset.id);
   else if (action === 'remove') { const item = cart.find((entry) => keyFor(entry) === target.dataset.key); cart = cart.filter((entry) => keyFor(entry) !== target.dataset.key); persistCart(); renderCart(); announce(`${getProduct(item?.id)?.name || 'Item'} removed from your bag.`); $('.cart-heading h1, .empty-state h1')?.setAttribute('tabindex', '-1'); $('.cart-heading h1, .empty-state h1')?.focus({ preventScroll: true }); }
   else if (action === 'zoom') { const product = getProduct(target.dataset.id); zoomDialog.innerHTML = `<button class="icon-button dialog-close" data-action="close-dialog" aria-label="Close enlarged image">${icon('close')}</button><img src="${asset(product)}" alt="${escape(product.name)}" />`; openDialog(zoomDialog); }
-  else if (action === 'film') {
-    const video = $('#entrance-film');
-    heroPlaybackRequested = video.paused;
-    video.autoplay = heroPlaybackRequested;
-    if (heroPlaybackRequested) {
-      try { await video.play(); }
-      catch { announce('The film could not be played. You can still explore the collection.'); }
-    } else video.pause();
-    updateFilmButton();
-  }
   else if (action === 'faq-section' && window.location.hash === target.getAttribute('href')) { $(`#faq-${CSS.escape(target.dataset.section)}`)?.scrollIntoView({ block: 'start' }); }
 });
 
