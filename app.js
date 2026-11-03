@@ -31,6 +31,7 @@ let collectionSort = 'featured';
 let selectedSize = 'S';
 let productQuantity = 1;
 let menuOpen = false;
+let heroPlaybackRequested = false;
 let currentProductId = null;
 let dialogTrigger = null;
 
@@ -149,7 +150,7 @@ function renderHome() {
   const media = heroMedia();
   main.innerHTML = `
     <section class="entrance" aria-labelledby="hero-heading">
-      <video id="entrance-film" src="${media.src}" data-variant="${media.variant}" autoplay muted loop playsinline preload="metadata" poster="${media.poster}" aria-hidden="true"></video>
+      <video id="entrance-film" src="${media.src}" data-variant="${media.variant}" autoplay muted loop playsinline preload="auto" poster="${media.poster}" aria-hidden="true"></video>
       <div class="entrance-center">
         <p class="hero-eyebrow">Women’s clothing</p>
         <h1 id="hero-heading">Your next<br>favourite outfit</h1>
@@ -161,11 +162,26 @@ function renderHome() {
   discovery.mountCarousels();
   const video = $('#entrance-film');
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  heroPlaybackRequested = !reducedMotion;
+  video.defaultMuted = true;
   video.muted = true;
+  video.playsInline = true;
+  video.loop = true;
+  video.autoplay = heroPlaybackRequested;
   video.addEventListener('pause', updateFilmButton);
   video.addEventListener('play', updateFilmButton);
-  if (reducedMotion) { video.autoplay = false; video.pause(); updateFilmButton(); }
-  else { video.play().catch(() => updateFilmButton()); }
+  video.addEventListener('canplay', attemptHeroPlayback);
+  video.addEventListener('ended', attemptHeroPlayback);
+  if (heroPlaybackRequested) attemptHeroPlayback();
+  else video.pause();
+  updateFilmButton();
+}
+
+function attemptHeroPlayback() {
+  const video = $('#entrance-film');
+  if (!video || !heroPlaybackRequested || document.hidden || !video.paused) return;
+  video.muted = true;
+  video.play().catch(updateFilmButton);
 }
 
 function syncHeroMedia() {
@@ -173,14 +189,14 @@ function syncHeroMedia() {
   if (!video) return;
   const media = heroMedia();
   if (video.getAttribute('src') === media.src) return;
-  const shouldPlay = !video.paused && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  video.autoplay = shouldPlay;
+  video.autoplay = heroPlaybackRequested;
   video.poster = media.poster;
   video.src = media.src;
   video.dataset.variant = media.variant;
   video.load();
-  if (shouldPlay) video.play().catch(updateFilmButton);
-  else { video.pause(); updateFilmButton(); }
+  if (heroPlaybackRequested) attemptHeroPlayback();
+  else video.pause();
+  updateFilmButton();
 }
 
 function updateFilmButton() {
@@ -484,7 +500,16 @@ document.addEventListener('click', async (event) => {
   else if (action === 'add') addToCart(target.dataset.id);
   else if (action === 'remove') { const item = cart.find((entry) => keyFor(entry) === target.dataset.key); cart = cart.filter((entry) => keyFor(entry) !== target.dataset.key); persistCart(); renderCart(); announce(`${getProduct(item?.id)?.name || 'Item'} removed from your bag.`); $('.cart-heading h1, .empty-state h1')?.setAttribute('tabindex', '-1'); $('.cart-heading h1, .empty-state h1')?.focus({ preventScroll: true }); }
   else if (action === 'zoom') { const product = getProduct(target.dataset.id); zoomDialog.innerHTML = `<button class="icon-button dialog-close" data-action="close-dialog" aria-label="Close enlarged image">${icon('close')}</button><img src="${asset(product)}" alt="${escape(product.name)}" />`; openDialog(zoomDialog); }
-  else if (action === 'film') { const video = $('#entrance-film'); if (video.paused) { try { await video.play(); } catch { announce('The film could not be played. You can still explore the collection.'); } } else video.pause(); updateFilmButton(); }
+  else if (action === 'film') {
+    const video = $('#entrance-film');
+    heroPlaybackRequested = video.paused;
+    video.autoplay = heroPlaybackRequested;
+    if (heroPlaybackRequested) {
+      try { await video.play(); }
+      catch { announce('The film could not be played. You can still explore the collection.'); }
+    } else video.pause();
+    updateFilmButton();
+  }
   else if (action === 'faq-section' && window.location.hash === target.getAttribute('href')) { $(`#faq-${CSS.escape(target.dataset.section)}`)?.scrollIntoView({ block: 'start' }); }
 });
 
@@ -532,7 +557,11 @@ for (const dialog of document.querySelectorAll('dialog')) {
   dialog.addEventListener('click', (event) => { if (event.target !== dialog) return; const rect = dialog.getBoundingClientRect(); if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) dialog.close(); });
   dialog.addEventListener('close', () => { if (!document.querySelector('dialog[open]') && dialogTrigger?.isConnected) dialogTrigger.focus({ preventScroll: true }); });
 }
-document.addEventListener('visibilitychange', () => { const video = $('#entrance-film'); if (document.hidden) { closeMenu(); if (video) video.pause(); } });
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { closeMenu(); $('#entrance-film')?.pause(); }
+  else attemptHeroPlayback();
+});
+window.addEventListener('pageshow', attemptHeroPlayback);
 window.addEventListener('storage', (event) => { if (event.key === 'femmora-bag-v1' || event.key === null) { cart = readCart(); renderHeader(); if (route().name === 'cart') renderCart(); if (route().name === 'checkout') renderCheckout(); } });
 window.addEventListener('storage', (event) => {
   if (event.key !== favouritesStorageKey && event.key !== null) return;
